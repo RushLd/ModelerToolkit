@@ -1,6 +1,34 @@
 (function() {
     const plugin_id = 'modeler_toolkit';
     const messages = {
+        "export_texture_backups": {
+            "en": "Export Texture / UV Backups",
+            "fr": "Exporter les sauvegardes des textures et UV"
+        },
+        "texture_uv_backups": {
+            "en": "Texture and UV Backups",
+            "fr": "Sauvegardes des textures et UV"
+        },
+        "close": {
+            "en": "Close",
+            "fr": "Fermer"
+        },
+        "incompatible_backup_preserved": {
+            "en": "This backup no longer matches the current project. It has been preserved without applying it. You can optimize again from the current textures and UVs, or export all backups for recovery.",
+            "fr": "Cette sauvegarde ne correspond plus au projet actuel. Elle est conservée sans être appliquée. Vous pouvez relancer l’optimisation depuis les textures et UV actuels, ou exporter toutes les sauvegardes pour les récupérer."
+        },
+        "previous_backups_preserved": {
+            "en": "Restore returns to the state immediately before this optimization. Earlier backups remain embedded in the project and can be exported.",
+            "fr": "La restauration revient à l’état juste avant cette optimisation. Les sauvegardes antérieures restent dans le projet et peuvent être exportées."
+        },
+        "rebuild_textures_and_share_matching_uvs": {
+            "en": "Rebuild textures and share identical UV regions",
+            "fr": "Reconstruire les textures et mutualiser les UV identiques"
+        },
+        "fewer_texture_pixels": {
+            "en": "% fewer texture pixels.",
+            "fr": " % de pixels de texture en moins."
+        },
         "optimize_texture_and_uvs": {
             "en": "Optimize Texture and UVs",
             "fr": "Optimiser la texture et les UV"
@@ -389,10 +417,6 @@
             "en": "UVs outside the texture preserved",
             "fr": "UV situés hors de la texture conservés"
         },
-        "restore_the_previous_uv_optimization_before_optimizing_again": {
-            "en": "Restore the previous UV optimization before optimizing again.",
-            "fr": "Restaurez les UV d’origine avant de lancer une nouvelle optimisation."
-        },
         "finish_the_current_edit_or_recording_before_optimizing_uvs": {
             "en": "Finish the current edit or recording before optimizing UVs.",
             "fr": "Terminez la modification ou l’enregistrement en cours avant d’optimiser les UV."
@@ -424,10 +448,6 @@
         "original_pixels_dimensions_padding_and_texture_assignments_are_u": {
             "en": ".\n\nOriginal pixels, dimensions, padding and texture assignments are unchanged. UVs are adjusted to preserve face appearance and orientation. Texture resolution is not reduced automatically.\n\nUse Undo or Restore Original Textures / UVs to revert.",
             "fr": ".\n\nLes pixels d’origine, les dimensions, le rembourrage et les textures attribuées aux faces restent inchangés. Les UV sont adaptés pour conserver le rendu et l’orientation des faces. La résolution des textures n’est pas réduite automatiquement.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière."
-        },
-        "restore_the_existing_texture_optimization_before_rebuilding_anot": {
-            "en": "Restore the existing texture optimization before rebuilding another atlas.",
-            "fr": "Restaurez les textures d’origine avant de reconstruire un nouvel atlas."
         },
         "finish_the_current_edit_or_recording_before_rebuilding_textures": {
             "en": "Finish the current edit or recording before rebuilding textures.",
@@ -1318,10 +1338,15 @@
     }
 
     function serialize_square_atlas({model, options}) {
-        const backup = Project?.[atlas_backup_key];
-        if (backup?.version !== 3 || !model.textures) return;
+        if (!model.textures) return;
+        const optimized_ids = new Set();
+        const visited = new Set();
+        for (let backup = Project?.[atlas_backup_key]; backup?.version && !visited.has(backup); backup = backup.previous_backup) {
+            visited.add(backup);
+            if (backup.version === 3) backup.optimized_textures.forEach(texture => optimized_ids.add(texture.uuid));
+        }
         for (const saved of model.textures) {
-            if (!backup.optimized_textures.some(texture => texture.uuid === saved.uuid)) continue;
+            if (!optimized_ids.has(saved.uuid)) continue;
             const texture = Texture.all.find(item => item.uuid === saved.uuid);
             if (!texture?.internal || !texture.source.startsWith('data:')) continue;
             if (options?.bitmaps !== false) {
@@ -1335,6 +1360,35 @@
 
     function atlas_message(message, error = false) {
         Blockbench.showMessageBox({title: translate('modeler_toolkit_texture_optimization'), message, icon: error ? 'error' : 'info'});
+        return {changed: false, message};
+    }
+
+    function export_atlas_backups() {
+        const backup = Project?.[atlas_backup_key];
+        if (!backup?.version) return atlas_message(translate('this_project_has_no_texture_optimization_backup'));
+        return Blockbench.export({
+            resource_id: 'modeler_toolkit_texture_backups',
+            type: translate('texture_uv_backups'),
+            extensions: ['json'],
+            name: (Project.name || 'model') + '_texture_backups',
+            savetype: 'text',
+            content: JSON.stringify({version: 1, project: Project.name, format: Format.id, backup}, null, 2)
+        });
+    }
+
+    function atlas_restore_blocked(reason) {
+        const project = Project;
+        const message = reason + '\n\n' + translate('incompatible_backup_preserved');
+        Blockbench.showMessageBox({
+            title: translate('modeler_toolkit_texture_optimization'),
+            message,
+            icon: 'info',
+            buttons: [translate('export_texture_backups'), translate('close')],
+            confirm: 0,
+            cancel: 1
+        }, result => {
+            if (result === 0 && Project === project) export_atlas_backups();
+        });
         return {changed: false, message};
     }
 
@@ -1632,7 +1686,6 @@
 
     function share_model_uvs() {
         if (!Project) return;
-        if (Project[atlas_backup_key]?.version) return atlas_message(translate('restore_the_previous_uv_optimization_before_optimizing_again'));
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_optimizing_uvs'));
         if (Texture.all.some(texture => texture.render_mode === 'layered')) return atlas_message(translate('layered_compositing_is_active_the_texture_stack_and_uvs_were_pre'));
         let plan;
@@ -1652,6 +1705,7 @@
             format: Format.id,
             width: Project.texture_width,
             height: Project.texture_height,
+            previous_backup: structuredClone(Project[atlas_backup_key] || {}),
             textures: textures.map(texture => ({uuid: texture.uuid, width: texture.width, height: texture.height, uv_width: texture.getUVWidth(), uv_height: texture.getUVHeight()})),
             elements: Object.fromEntries(elements.map(element => [element.uuid, capture_texture_uv(element)]))
         };
@@ -1694,7 +1748,6 @@
 
     function optimize_texture_atlas() {
         if (!Project) return;
-        if (Project[atlas_backup_key]?.version && Project[atlas_backup_key].version !== 2) return atlas_message(translate('restore_the_existing_texture_optimization_before_rebuilding_anot'));
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_rebuilding_textures'));
         if (Texture.all.some(texture => texture.render_mode === 'layered')) return atlas_message(translate('layered_texture_compositing_is_active_the_texture_stack_was_pres'));
         const previous_backup = structuredClone(Project[atlas_backup_key] || {});
@@ -1768,7 +1821,7 @@
             }
             Project[atlas_backup_key] = backup;
             refresh_atlas_view();
-            Undo.finishEdit('Reconstruire les textures et mutualiser les UV identiques', aspects);
+            Undo.finishEdit(translate('rebuild_textures_and_share_matching_uvs'), aspects);
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
@@ -1779,19 +1832,19 @@
         const regions_before = plans.reduce((count, plan) => count + new Set(plan.entries.map(entry => entry.region)).size, 0);
         const regions_after = plans.reduce((count, plan) => count + plan.placements.size, 0);
         const result = {changed: true, mode: 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
-        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString(Language.code === 'fr' ? 'fr-FR' : 'en-US', {maximumFractionDigits: 1}) + ' % de pixels de texture en moins.' : translate('dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
-        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
+        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString(Language.code === 'fr' ? 'fr-FR' : 'en-US', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate('dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
+        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
 
     function restore_square_atlas(backup) {
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_restoring_textures'));
-        if (backup.format !== Format.id || Project.texture_width !== backup.optimized_width || Project.texture_height !== backup.optimized_height) return atlas_message(translate('undo_the_project_format_or_uv_resolution_change_before_restoring'));
+        if (backup.format !== Format.id || Project.texture_width !== backup.optimized_width || Project.texture_height !== backup.optimized_height) return atlas_restore_blocked(translate('undo_the_project_format_or_uv_resolution_change_before_restoring'));
         const textures = backup.textures.map(saved => Texture.all.find(texture => texture.uuid === saved.uuid));
-        if (textures.some((texture, index) => !texture || texture.width !== backup.optimized_textures[index].width || texture.height !== backup.optimized_textures[index].height)) return atlas_message(translate('an_optimized_texture_is_missing_or_has_a_different_resolution_un'));
+        if (textures.some((texture, index) => !texture || texture.width !== backup.optimized_textures[index].width || texture.height !== backup.optimized_textures[index].height)) return atlas_restore_blocked(translate('an_optimized_texture_is_missing_or_has_a_different_resolution_un'));
         const elements = Outliner.elements.filter(element => backup.elements[element.uuid]);
-        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid]))) return atlas_message(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to'));
-        if (Outliner.elements.some(element => !backup.elements[element.uuid] && (element.faces ? Object.values(element.faces).some(face => textures.includes(face.getTexture())) : textures.some(texture => element.texture === texture.uuid)))) return atlas_message(translate('new_geometry_uses_an_optimized_texture_undo_that_addition_before'));
+        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid]))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to'));
+        if (Outliner.elements.some(element => !backup.elements[element.uuid] && (element.faces ? Object.values(element.faces).some(face => textures.includes(face.getTexture())) : textures.some(texture => element.texture === texture.uuid)))) return atlas_restore_blocked(translate('new_geometry_uses_an_optimized_texture_undo_that_addition_before'));
         const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
         try {
@@ -1825,15 +1878,15 @@
 
     function restore_optimized_uvs(backup) {
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_restoring_uvs'));
-        if (backup.format !== Format.id || backup.width !== Project.texture_width || backup.height !== Project.texture_height) return atlas_message(translate('undo_the_project_format_or_uv_resolution_change_before_restoring_2'));
-        if (backup.textures.some(saved => !Texture.all.some(texture => texture.uuid === saved.uuid && texture.width === saved.width && texture.height === saved.height && texture.getUVWidth() === saved.uv_width && texture.getUVHeight() === saved.uv_height))) return atlas_message(translate('an_original_texture_is_missing_or_has_a_different_resolution_res'));
+        if (backup.format !== Format.id || backup.width !== Project.texture_width || backup.height !== Project.texture_height) return atlas_restore_blocked(translate('undo_the_project_format_or_uv_resolution_change_before_restoring_2'));
+        if (backup.textures.some(saved => !Texture.all.some(texture => texture.uuid === saved.uuid && texture.width === saved.width && texture.height === saved.height && texture.getUVWidth() === saved.uv_width && texture.getUVHeight() === saved.uv_height))) return atlas_restore_blocked(translate('an_original_texture_is_missing_or_has_a_different_resolution_res'));
         const elements = Outliner.elements.filter(element => backup.elements[element.uuid]);
-        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid]))) return atlas_message(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to_2'));
+        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid]))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to_2'));
         const aspects = {elements, uv_only: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
         try {
             elements.forEach(element => apply_texture_uv(element, backup.elements[element.uuid]));
-            Project[atlas_backup_key] = {};
+            Project[atlas_backup_key] = structuredClone(backup.previous_backup || {});
             refresh_atlas_view();
             Undo.finishEdit(translate('restore_original_uvs_without_changing_textures'), aspects);
         } catch (error) {
@@ -1851,15 +1904,15 @@
         if (backup?.version === 2) return restore_optimized_uvs(backup);
         if (backup?.version !== 1) return atlas_message(translate('this_project_has_no_texture_optimization_backup'));
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_restoring_textures'));
-        if (backup.format !== Format.id || backup.width !== Project.texture_width || backup.height !== Project.texture_height) return atlas_message(translate('the_project_format_or_uv_resolution_has_changed_undo_those_chang'));
+        if (backup.format !== Format.id || backup.width !== Project.texture_width || backup.height !== Project.texture_height) return atlas_restore_blocked(translate('the_project_format_or_uv_resolution_has_changed_undo_those_chang'));
         const elements = Outliner.elements.filter(element => backup.elements[element.uuid]);
         for (const element of elements) {
             const saved = backup.elements[element.uuid];
-            if (element.type !== saved.type || Object.keys(element.faces).length !== Object.keys(saved.faces).length || Object.entries(element.faces).some(([key, face]) => !saved.faces[key] || face.vertices && (face.vertices.length !== saved.faces[key].vertices?.length || face.vertices.some(vertex => !saved.faces[key].vertices.includes(vertex))))) return atlas_message(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to_3'));
+            if (element.type !== saved.type || Object.keys(element.faces).length !== Object.keys(saved.faces).length || Object.entries(element.faces).some(([key, face]) => !saved.faces[key] || face.vertices && (face.vertices.length !== saved.faces[key].vertices?.length || face.vertices.some(vertex => !saved.faces[key].vertices.includes(vertex))))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to_3'));
         }
-        if (backup.textures.some(saved => Texture.all.some(texture => texture.uuid === saved.uuid))) return atlas_message(translate('an_original_texture_identifier_is_already_in_use_undo_the_textur'));
-        if (backup.textures.some(saved => saved.path && Texture.all.some(texture => texture.path === saved.path))) return atlas_message(translate('an_original_texture_path_is_already_in_use_undo_the_texture_repl'));
-        if ((Format.single_texture || Format.single_texture_default) && Outliner.elements.some(element => !backup.elements[element.uuid] && element.faces && Object.values(element.faces).some(face => backup.atlases.includes(face.getTexture()?.uuid)))) return atlas_message(translate('new_geometry_uses_the_optimized_default_texture_undo_that_additi'));
+        if (backup.textures.some(saved => Texture.all.some(texture => texture.uuid === saved.uuid))) return atlas_restore_blocked(translate('an_original_texture_identifier_is_already_in_use_undo_the_textur'));
+        if (backup.textures.some(saved => saved.path && Texture.all.some(texture => texture.path === saved.path))) return atlas_restore_blocked(translate('an_original_texture_path_is_already_in_use_undo_the_texture_repl'));
+        if ((Format.single_texture || Format.single_texture_default) && Outliner.elements.some(element => !backup.elements[element.uuid] && element.faces && Object.values(element.faces).some(face => backup.atlases.includes(face.getTexture()?.uuid)))) return atlas_restore_blocked(translate('new_geometry_uses_the_optimized_default_texture_undo_that_additi'));
         const atlases = Texture.all.filter(texture => backup.atlases.includes(texture.uuid));
         const restored = [];
         const aspects = {elements, textures: atlases, bitmap: true, texture_order: true, selected_texture: true, raven_tools_atlas: true};
@@ -1890,7 +1943,7 @@
             atlases.filter(texture => !used.has(texture.uuid)).forEach(texture => texture.remove(true));
             const order = [...backup.order, ...Texture.all.filter(texture => !backup.order.includes(texture.uuid)).map(texture => texture.uuid)];
             Texture.all.sort((first, second) => order.indexOf(first.uuid) - order.indexOf(second.uuid));
-            Project[atlas_backup_key] = {};
+            Project[atlas_backup_key] = structuredClone(backup.previous_backup || {});
             (Texture.all.find(texture => texture.uuid === backup.selected) || restored[0])?.select();
             aspects.textures = [...restored, ...kept];
             refresh_atlas_view();
@@ -1916,6 +1969,7 @@
             ['modeler_toolkit_share_uv', {name: translate('share_uvs_keep_texture'), icon: 'content_copy', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: share_model_uvs}],
             ['modeler_toolkit_rebuild_texture', {name: translate('create_texture_blockbench'), icon: 'grid_on', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: rebuild_texture_atlas}],
             ['modeler_toolkit_restore_atlas', {name: translate('restore_original_textures_uvs'), icon: 'restore', condition: () => module_enabled('atlas') && !!Project && [1, 2, 3].includes(Project[atlas_backup_key]?.version), click: restore_texture_atlas}],
+            ['modeler_toolkit_export_backups', {name: translate('export_texture_backups'), icon: 'save_alt', condition: () => module_enabled('atlas') && !!Project && !!Project[atlas_backup_key]?.version, click: export_atlas_backups}],
             ['modeler_toolkit_uv_cleanup', {name: translate('clean_uv_edges'), icon: 'healing', condition: () => module_enabled('uv_cleanup') && !!Project && selected_elements().length > 0, click: open_uv_cleanup}],
             ['modeler_toolkit_restore_uv', {name: translate('restore_original_uvs'), icon: 'settings_backup_restore', condition: () => module_enabled('uv_cleanup') && !!Project && selected_elements().length > 0, click: restore_model_uv}],
             ['modeler_toolkit_inverted', {name: translate('create_inverted_cubes'), icon: 'flip_to_back', condition: () => module_enabled('inverted') && !!Project && selected_elements().some(element => element instanceof Cube), click: create_inverted_cubes}],
@@ -1929,7 +1983,7 @@
         ['modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'].forEach(id => {
             if (Toolbars.outliner && !Toolbars.outliner.children.some(child => (typeof child === 'string' ? child : child.id) === id)) Toolbars.outliner.add(id);
         });
-        tools_menu = new BarMenu('modeler_toolkit', ['modeler_toolkit_optimize_atlas', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_share_uv', 'modeler_toolkit_rebuild_texture', '_', 'modeler_toolkit_uv_cleanup', 'modeler_toolkit_restore_uv', '_', 'modeler_toolkit_inverted', 'modeler_toolkit_outline', '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings', '_', 'modeler_toolkit_convert', '_', 'modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'], {name: translate('modeler_toolkit'), icon: 'handyman'});
+        tools_menu = new BarMenu('modeler_toolkit', ['modeler_toolkit_optimize_atlas', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_export_backups', 'modeler_toolkit_share_uv', 'modeler_toolkit_rebuild_texture', '_', 'modeler_toolkit_uv_cleanup', 'modeler_toolkit_restore_uv', '_', 'modeler_toolkit_inverted', 'modeler_toolkit_outline', '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings', '_', 'modeler_toolkit_convert', '_', 'modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'], {name: translate('modeler_toolkit'), icon: 'handyman'});
         MenuBar.addMenu(tools_menu, 'tools');
         Blockbench.on('select_project', refresh_layer_icons);
         Blockbench.on('close_project', close_layer_project);
@@ -2653,10 +2707,10 @@
         about: translate('uv_tools_outlines_java_conversion_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.1.0',
+        version: '3.1.1',
         min_version: '5.2.0',
-        repository: 'https://github.com/RushLd/Modeler_Toolkit',
-        bug_tracker: 'https://github.com/RushLd/Modeler_Toolkit/issues',
+        repository: 'https://github.com/RushLd/ModelerToolkit',
+        bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
         onload() {
             plugin_loaded = true;
             lifecycle++;

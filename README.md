@@ -8,18 +8,19 @@ A collection of texture, UV, modeling and capture tools for **Blockbench 5.2 or 
 2. Choose **Load Plugin from URL** and paste this URL:
 
    ```text
-   https://raw.githubusercontent.com/RushLd/Modeler_Toolkit/main/modeler_toolkit.js
+   https://raw.githubusercontent.com/RushLd/ModelerToolkit/main/modeler_toolkit.js
    ```
 
 3. Find the tools in the **Modeler Toolkit** menu. Capture options also appear in the GIF recording dialog.
 
-Alternatively, download [modeler_toolkit.js](https://github.com/RushLd/Modeler_Toolkit/blob/main/modeler_toolkit.js) and use **Load Plugin from File**. Install only one copy. This repository is distributed independently from the official Blockbench plugin catalog.
+Alternatively, download [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js) and use **Load Plugin from File**. Install only one copy. This repository is distributed independently from the official Blockbench plugin catalog.
 
 ## Tools
 
 - **Optimize square textures and UVs**: share pixel-identical face regions, including rotated and mirrored matches, and rebuild square textures. Matching includes surrounding padding pixels and transparency. Textures shrink when a compatible layout fits; rebuilding can also keep their dimensions.
 - **Share UVs without rebuilding**: reuse matching regions while keeping texture images and dimensions unchanged.
-- **Restore original textures and UVs**: restore saved optimization data. Optimization supports Undo and Redo. Backups survive saving and reopening a `.bbmodel` file.
+- **Restore original textures and UVs**: restore saved optimization data. Optimization supports Undo and Redo. Backups survive saving and reopening a `.bbmodel` file. Repeated optimization starts from the current textures and UVs, saves a new recovery state and retains earlier backups. Restoration steps back one optimization at a time.
+- **Export backups**: save the complete texture and UV recovery chain as JSON, including original image data. Incompatible older backups remain preserved and exportable.
 - **Create texture**: open Blockbench's regular texture creation tool.
 - **Clean UV edges**: inset selected face UVs to reduce texture bleeding. Original UVs are saved for restoration. Temporary capture cleanup changes rendered UVs only.
 - **Inverted cubes and outlines**: create inward-facing cubes named `<name>_inverted` or outline shells named `<name>_outline`. Outlines support cubes and meshes in compatible formats.
@@ -44,7 +45,7 @@ The plugin does not upload models, textures or recordings and contains no teleme
 - The texture optimizer preserves box UV layouts, animated textures, layered textures, materials and unsupported element types instead of repacking them. It processes compatible per-face cube UVs and mesh UVs.
 - Exact duplicate matching includes the detected surrounding border. Regions with different padding are kept separate. No image resampling or smoothing is applied.
 - Slight sampling differences can occur at texel boundaries in the 3D preview after repacking. Keep the original model and use Undo or restoration if needed. Existing source image files are not overwritten automatically.
-- Restore before changing topology, replacing optimized textures, changing format or changing UV resolution. Restoration refuses incompatible states rather than guessing.
+- Changes to topology, textures, format or UV resolution can make an older recovery state incompatible. Restoration refuses incompatible states and offers backup export. You can still optimize the current model again; restoring that new optimization returns to the state immediately before it.
 - Reversible metadata is stored in `.bbmodel` projects. Game exports do not preserve plugin restoration data.
 - Partially transparent shadows need an opaque GIF background or an output format with full alpha, such as APNG. GIF transparency cannot represent smooth partial opacity.
 - Installed font discovery depends on the operating system and browser. The configured font and Arial remain available as fallbacks; missing fonts can change text appearance.
