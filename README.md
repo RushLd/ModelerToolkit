@@ -25,8 +25,8 @@ Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/M
 | **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour annuler une optimisation, utilisez la restauration des textures et UV décrite plus bas. |
 | **Avancé > Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
 | **Créer des contours** | Ajoute une enveloppe agrandie avec des faces inversées autour de la sélection pour produire un contour visible. L’épaisseur et la couleur ou la texture sont réglables. Les objets créés sont nommés `<name>_outline`. |
-| **Aperçu du rendu GIF** | Lance un aperçu animé avec les réglages de capture actuels : dimensions, cadrage, zoom, fond, animation, sol, ombre et filigrane. Le temps de génération dépend de la durée choisie et de l’encodage. |
-| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, le nettoyage UV, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
+| **Aperçu du rendu GIF** | Lance un aperçu animé avec les réglages de capture actuels : dimensions, cadrage, zoom, fond, animation, éclairage, sol, ombre et filigrane. Le temps de génération dépend de la durée choisie et de l’encodage. |
+| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, le nettoyage UV, l’éclairage, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
 | **Visibilité > Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`, ainsi que leur contenu. Un second clic rétablit ce que le bouton a masqué. |
 | **Visibilité > Afficher uniquement les calques** | Isole ces mêmes éléments et groupes `_layer` en masquant le reste. Un second clic rétablit la visibilité précédente. |
 
@@ -47,19 +47,31 @@ L’optimisation accepte **Annuler** et **Rétablir**. Les sauvegardes sont cons
 
 Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et propose de l’exporter. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
 
-## Enregistrement, sol et ombres
+## Enregistrement, éclairage, sol et ombres
 
 Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
 
 L’ombre dynamique est calculée à partir du modèle animé et projetée sur un mur ou un sol invisible, ou sur le sol visible de rendu. Sa couleur, son opacité, sa netteté et la direction de la lumière sont réglables.
 
+Activez **Éclairage personnalisé** dans la fenêtre GIF pour éclairer le modèle et le sol. Les valeurs par défaut se règlent aussi dans **Paramètres de Modeler Toolkit**.
+
+- **Direction de la lumière** : 0° correspond au côté de la caméra, -90° à la gauche, 90° à la droite et 180° à l’arrière.
+- **Hauteur de la lumière** : de 5° pour une lumière rasante à 90° pour une lumière au-dessus du modèle.
+- **Teinte de la lumière** : chaude, neutre, froide ou couleur personnalisée.
+- **Intensité de la lumière** : puissance de la source directionnelle.
+- **Lumière ambiante** : éclairage neutre des faces moins exposées.
+
+La lumière prend sa direction par rapport à la caméra au début de la capture, puis reste fixe pendant l’animation, y compris lorsque la caméra tourne. L’ombre suit cette même source ; les anciens réglages de direction de l’ombre sont alors masqués. Sans lumière directionnelle, l’ombre portée disparaît. L’éclairage est indépendant de l’activation du sol et du nettoyage UV.
+
+Le cadre de capture, l’aperçu animé et le GIF utilisent le même rendu. Les textures et les matériaux d’origine sont rétablis après chaque image : aucun pixel de texture, UV ou réglage d’éclairage de Blockbench n’est modifié. Les matériaux émissifs et les shaders bruts personnalisés conservent leur rendu propre. Il s’agit d’un éclairage directionnel avec ambiance, sans rebonds de lumière ni calcul physique comparable à Cycles.
+
 Activez **Sol de rendu** pour ajouter une surface temporaire unie ou en dalles. Réglez sa largeur, sa profondeur et la taille des dalles en blocs : **1 bloc = 16 unités du modèle**. Les couleurs, l’épaisseur, la hauteur et les décalages X/Z sont également configurables.
 
 Le sol se place sous le point le plus bas du modèle à la première image enregistrée, puis reste fixe pendant l’animation. L’ombre s’arrête à ses bords. Prévoyez une surface assez grande pour les mouvements et l’ombre. Le sol est retiré à la fin de la capture, lors d’une annulation ou du déchargement du plugin. Il n’est jamais ajouté à la géométrie ni aux textures du modèle.
 
-Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
+Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle éclairé, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
 
-**Aperçu du rendu GIF** utilise le moteur d’enregistrement natif avec les réglages choisis : résolution, cadrage, zoom, pixelisation, fond couleur ou image, animation, durée, fréquence d’images, rotation de la caméra, repères, sol, ombre et filigrane. L’animation est affichée dans ses proportions réelles. La caméra et l’état de l’animation sont ensuite restaurés. Les séquences PNG sont prévisualisées en APNG, sans créer d’archive.
+**Aperçu du rendu GIF** utilise le moteur d’enregistrement natif avec les réglages choisis : résolution, cadrage, zoom, pixelisation, fond couleur ou image, animation, durée, fréquence d’images, rotation de la caméra, repères, éclairage, sol, ombre et filigrane. L’animation est affichée dans ses proportions réelles. La caméra et l’état de l’animation sont ensuite restaurés. Les séquences PNG sont prévisualisées en APNG, sans créer d’archive.
 
 L’aperçu nécessite le temps de capture configuré, puis l’encodage. Il peut être annulé depuis le cadre d’enregistrement.
 
@@ -67,7 +79,7 @@ Le **filigrane** comporte une ligne de texte avec couleur, police, taille, posit
 
 ## Valeurs par défaut et confidentialité
 
-À la première installation, le rendu dynamique, le sol et le nettoyage UV temporaire sont désactivés. Le filigrane est vide et désactivé. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
+À la première installation, le rendu dynamique, l’éclairage personnalisé, le sol et le nettoyage UV temporaire sont désactivés. Le filigrane est vide et désactivé. L’éclairage personnalisé propose une lumière blanche à 70 % d’intensité avec 30 % de lumière ambiante, venant de la gauche à 45° de hauteur. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Avec l’éclairage personnalisé, cette opacité est pondérée par la part de lumière directionnelle. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
 
 Pour migrer depuis Raven Toolkit ou RavenTool, désinstallez l’ancien plugin avant de charger Modeler Toolkit. Les paramètres existants sont importés automatiquement et les anciennes données de restauration restent prises en charge. L’identifiant du plugin est `modeler_toolkit`.
 

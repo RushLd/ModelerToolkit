@@ -1,6 +1,21 @@
 (function() {
     const plugin_id = 'modeler_toolkit';
     const messages = {
+        "lighting_enabled": "Éclairage personnalisé",
+        "lighting_description": "Éclairer temporairement le modèle et le sol avec les mêmes réglages dans l’aperçu et l’export.",
+        "light_azimuth": "Direction de la lumière (°)",
+        "light_azimuth_description": "0° : depuis la caméra ; -90° : gauche ; 90° : droite ; 180° : arrière. La direction reste fixe pendant la capture.",
+        "light_elevation": "Hauteur de la lumière (°)",
+        "light_elevation_description": "5° : lumière rasante ; 90° : lumière au-dessus du modèle.",
+        "light_tone": "Teinte de la lumière",
+        "light_neutral": "Neutre",
+        "light_warm": "Chaude",
+        "light_cool": "Froide",
+        "light_custom": "Couleur personnalisée",
+        "light_color": "Couleur de la lumière",
+        "light_intensity": "Intensité de la lumière (%)",
+        "ambient_intensity": "Lumière ambiante (%)",
+        "ambient_description": "Éclairage neutre des faces moins exposées. À 0 %, seule la lumière directionnelle éclaire le modèle.",
         "capture_floor": "Sol de rendu",
         "capture_floor_description": "Ajouter un sol temporaire qui reçoit l’ombre configurée. Un bloc correspond à 16 unités du modèle.",
         "floor_style": "Aspect du sol",
@@ -210,6 +225,13 @@
     const installed_font_options = {Arial: 'Arial'};
     const setting_definitions = {
         enabled: {name: translate('enable_dynamic_gif_render'), type: 'toggle', value: false, description: translate('use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or')},
+        lighting_enabled: {name: translate('lighting_enabled'), type: 'toggle', value: false, description: translate('lighting_description')},
+        light_azimuth: {name: translate('light_azimuth'), type: 'number', value: -45, min: -180, max: 180, step: 5, description: translate('light_azimuth_description')},
+        light_elevation: {name: translate('light_elevation'), type: 'number', value: 45, min: 5, max: 90, step: 5, description: translate('light_elevation_description')},
+        light_tone: {name: translate('light_tone'), type: 'select', value: 'neutral', options: {neutral: translate('light_neutral'), warm: translate('light_warm'), cool: translate('light_cool'), custom: translate('light_custom')}},
+        light_color: {name: translate('light_color'), type: 'click', value: '#ffffff', icon: 'palette', click: open_settings},
+        light_intensity: {name: translate('light_intensity'), type: 'number', value: 70, min: 0, max: 200, step: 5},
+        ambient_intensity: {name: translate('ambient_intensity'), type: 'number', value: 30, min: 0, max: 200, step: 5, description: translate('ambient_description')},
         shadow_enabled: {name: translate('dynamic_shadow'), type: 'toggle', value: true, description: translate('project_the_animated_model_onto_an_invisible_wall_or_floor_using')},
         color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: open_settings},
         opacity: {name: translate('shadow_opacity'), type: 'number', value: 35, min: 0, max: 100, step: 1, description: translate('partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain')},
@@ -260,6 +282,8 @@
     const previous_floor_fields = new Map();
     const installed_floor_fields = new Map();
     const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
+    const lighting_keys = ['lighting_enabled', 'light_azimuth', 'light_elevation', 'light_tone', 'light_color', 'light_intensity', 'ambient_intensity'];
+    const light_colors = {neutral: '#ffffff', warm: '#ffdab2', cool: '#b9d7ff'};
     const animation_choices = new WeakMap();
     let active_session = null;
     let pending_preview = null;
@@ -1509,7 +1533,9 @@
                 min: definition.min,
                 max: definition.max,
                 step: definition.step,
-                condition: key.startsWith('floor_') && key !== 'floor_enabled' ? values => floor_field_visible(key, values) : undefined
+                condition: lighting_keys.includes(key) ? values => lighting_field_visible(key, values)
+                    : ['light_x', 'light_y'].includes(key) ? values => !values.lighting_enabled
+                    : key.startsWith('floor_') && key !== 'floor_enabled' ? values => floor_field_visible(key, values) : undefined
             };
         });
         form.actions = {
@@ -1610,13 +1636,27 @@
 
     function setup_light_fields() {
         const values = read_values();
-        const visible = form => (!!form[export_field] || !!form[plugin_id + '_floor_enabled']) && !!plugin_settings.shadow_enabled.value;
+        const visible = form => !form[plugin_id + '_lighting_enabled'] && (!!form[export_field] || !!form[plugin_id + '_floor_enabled']) && !!plugin_settings.shadow_enabled.value;
         const custom = form => visible(form) && form[light_field] === 'custom';
         const definitions = {
             [light_field]: {label: translate('shadow_light_direction'), type: 'select', value: 'settings', options: Object.fromEntries(Object.entries(light_presets).map(([key, preset]) => [key, preset.name])), condition: visible, description: translate('choose_where_the_light_comes_from_for_this_export_the_shadow_pro')},
             [light_x_field]: {label: translate('light_horizontal'), type: 'number', value: values.light_x, min: -200, max: 200, step: 5, condition: custom, description: translate('negative_light_from_the_left_positive_light_from_the_right')},
             [light_y_field]: {label: translate('light_vertical_depth'), type: 'number', value: values.light_y, min: -200, max: 200, step: 5, condition: custom, description: translate('negative_light_from_below_positive_light_from_above_on_a_floor_t')}
         };
+        lighting_keys.forEach(key => {
+            const definition = setting_definitions[key];
+            definitions[plugin_id + '_' + key] = {
+                label: definition.name,
+                description: definition.description,
+                type: definition.type === 'toggle' ? 'checkbox' : definition.type === 'click' ? 'color' : definition.type,
+                value: values[key],
+                min: definition.min,
+                max: definition.max,
+                step: definition.step,
+                options: definition.options,
+                condition: form => lighting_field_visible(key, {lighting_enabled: form[plugin_id + '_lighting_enabled'], light_tone: form[plugin_id + '_light_tone']})
+            };
+        });
         Object.entries(definitions).forEach(([key, field]) => {
             previous_light_fields.set(key, Screencam.gif_options_dialog.form_config[key]);
             installed_light_fields.set(key, field);
@@ -1639,11 +1679,16 @@
         return !['floor_tile_size', 'floor_seam_color'].includes(key) || values.floor_style === 'tiles';
     }
 
+    function lighting_field_visible(key, values) {
+        if (key === 'lighting_enabled') return true;
+        return !!values.lighting_enabled && (key !== 'light_color' || values.light_tone === 'custom');
+    }
+
     function capture_render_values(options) {
-        const overrides = Object.fromEntries(floor_keys.map(key => [key, options[plugin_id + '_' + key]]));
+        const overrides = Object.fromEntries([...floor_keys, ...lighting_keys].map(key => [key, options[plugin_id + '_' + key]]));
         const values = read_values(overrides);
         const render_enabled = options[export_field] ?? values.enabled;
-        return {...values, ...capture_light_values(options, values), shadow_enabled: (render_enabled || values.floor_enabled) && values.shadow_enabled, clean_uv: render_enabled && values.clean_uv, watermark_enabled: options[watermark_field] ?? false};
+        return {...values, ...capture_light_values(options, values), shadow_enabled: (render_enabled || values.floor_enabled || values.lighting_enabled) && values.shadow_enabled, clean_uv: render_enabled && values.clean_uv, watermark_enabled: options[watermark_field] ?? false};
     }
 
     function setup_floor_fields() {
@@ -1994,13 +2039,22 @@
     }
 
     function create_session(options, project = Project) {
-        const session = {options, project, depth_materials: new Map(), frame: null, observer: null, disposed: false, anchor: null};
+        const session = {options, project, depth_materials: new Map(), lighting_materials: new Map(), frame: null, observer: null, disposed: false, anchor: null};
+        if (options.lighting_enabled) {
+            session.lighting_uniforms = {
+                modeler_light_direction: {value: new THREE.Vector3()},
+                modeler_light_color: {value: new THREE.Color(light_colors[options.light_tone] || options.light_color)},
+                modeler_light_intensity: {value: options.light_intensity / 100},
+                modeler_ambient_intensity: {value: options.ambient_intensity / 100}
+            };
+        }
         if (options.floor_enabled) create_floor(session);
         if (options.shadow_enabled) {
             session.receiver = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({color: options.color, opacity: options.opacity / 100, depthWrite: false, side: THREE.DoubleSide}));
             session.receiver.name = 'modeler_toolkit_receiver';
             session.receiver.receiveShadow = true;
             session.receiver.material.toneMapped = false;
+            if (options.lighting_enabled) session.receiver.material.opacity *= options.light_intensity / Math.max(options.light_intensity + options.ambient_intensity, 0.001);
             session.light = new THREE.DirectionalLight(0xffffff, 0);
             session.light.name = 'modeler_toolkit_light';
             session.light.castShadow = true;
@@ -2009,6 +2063,65 @@
             session.light.shadow.bias = -0.0001;
         }
         return session;
+    }
+
+    function position_lighting(session, camera) {
+        if (!session.lighting_direction) {
+            const front = camera.getWorldDirection(new THREE.Vector3()).negate();
+            front.y = 0;
+            if (front.lengthSq() < 0.0001) front.set(0, 0, 1);
+            front.normalize();
+            const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), front);
+            const azimuth = THREE.MathUtils.degToRad(session.options.light_azimuth);
+            const elevation = THREE.MathUtils.degToRad(session.options.light_elevation);
+            session.lighting_direction = front.multiplyScalar(Math.cos(azimuth) * Math.cos(elevation)).addScaledVector(right, Math.sin(azimuth) * Math.cos(elevation));
+            session.lighting_direction.y = Math.sin(elevation);
+            session.lighting_direction.normalize();
+        }
+        camera.updateMatrixWorld(true);
+        session.lighting_uniforms.modeler_light_direction.value.copy(session.lighting_direction).transformDirection(camera.matrixWorldInverse);
+    }
+
+    function get_lighting_material(session, source) {
+        if (source.uniforms?.EMISSIVE?.value || source.isRawShaderMaterial) return source;
+        let entry = session.lighting_materials.get(source);
+        if (entry && entry.version !== source.version) {
+            entry.material.dispose();
+            session.lighting_materials.delete(source);
+            entry = null;
+        }
+        if (!entry) {
+            const material = source.clone();
+            if (source.uniforms) material.uniforms = Object.fromEntries(Object.entries(source.uniforms).map(([key, uniform]) => [key, {...uniform}]));
+            material.onBeforeCompile = function(shader, renderer) {
+                source.onBeforeCompile.call(this, shader, renderer);
+                Object.assign(shader.uniforms, session.lighting_uniforms);
+                shader.vertexShader = 'varying vec3 modeler_light_normal;\n' + shader.vertexShader.replace(/void\s+main\s*\([^)]*\)\s*\{/, match => match + '\nmodeler_light_normal = normalMatrix * normal;\n');
+                const declarations = 'varying vec3 modeler_light_normal;\nuniform vec3 modeler_light_direction;\nuniform vec3 modeler_light_color;\nuniform float modeler_light_intensity;\nuniform float modeler_ambient_intensity;\n';
+                const lighting = '\nvec3 modeler_normal = normalize(modeler_light_normal);\nif (!gl_FrontFacing) modeler_normal = -modeler_normal;\nfloat modeler_diffuse = max(dot(modeler_normal, modeler_light_direction), 0.0);\ngl_FragColor.rgb *= vec3(modeler_ambient_intensity) + modeler_light_color * modeler_light_intensity * modeler_diffuse;\n';
+                const end = shader.fragmentShader.lastIndexOf('}');
+                shader.fragmentShader = declarations + shader.fragmentShader.slice(0, end) + lighting + shader.fragmentShader.slice(end);
+            };
+            material.customProgramCacheKey = () => 'modeler_toolkit_lighting_1_' + source.customProgramCacheKey();
+            entry = {material, version: source.version};
+            session.lighting_materials.set(source, entry);
+        }
+        const material = entry.material;
+        if (source.uniforms) {
+            Object.entries(source.uniforms).forEach(([key, uniform]) => {
+                material.uniforms[key] = {...uniform};
+            });
+            if (material.uniforms.SHADE) material.uniforms.SHADE.value = false;
+            if (material.uniforms.LIGHTCOLOR) material.uniforms.LIGHTCOLOR.value = new THREE.Color(0xffffff);
+        }
+        material.opacity = source.opacity;
+        material.visible = source.visible;
+        material.clippingPlanes = source.clippingPlanes;
+        material.clipIntersection = source.clipIntersection;
+        material.clipShadows = source.clipShadows;
+        if (source.map) material.map = source.map;
+        if (source.color) material.color.copy(source.color);
+        return material;
     }
 
     function position_shadow(session, camera, bounds) {
@@ -2038,7 +2151,7 @@
             session.receiver.rotation.set(-Math.PI / 2, 0, 0);
             session.receiver.scale.set(session.options.floor_width * 16, session.options.floor_depth * 16, 1);
         }
-        const direction = normal.clone().addScaledVector(right, session.options.light_x / 100).addScaledVector(up, session.options.light_y / 100).normalize();
+        const direction = session.lighting_direction?.clone() || normal.clone().addScaledVector(right, session.options.light_x / 100).addScaledVector(up, session.options.light_y / 100).normalize();
         const shadow_camera = session.light.shadow.camera;
         const camera_up = Math.abs(direction.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
         const light_right = new THREE.Vector3().crossVectors(camera_up, direction).normalize();
@@ -2110,11 +2223,15 @@
         const cast_snapshots = new Map();
         const shadow_state = {enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type, autoUpdate: renderer.shadowMap.autoUpdate, needsUpdate: renderer.shadowMap.needsUpdate};
         const original_buffer_render = renderer.renderBufferDirect;
+        const casters = new Set(elements.map(element => element.mesh));
+        const lit_meshes = new Set(casters);
         let buffer_wrapper;
         try {
+            if (session.lighting_uniforms) position_lighting(session, camera);
             if (session.floor) {
                 position_floor(session, camera, bounds);
                 render_scene.add(session.floor);
+                session.floor.traverse(node => {if (node.isMesh) lit_meshes.add(node);});
             }
             if (session.options.clean_uv && session.options.uv_margin > 0) {
                 elements.forEach(element => {
@@ -2128,7 +2245,6 @@
             }
             if (session.light) {
                 position_shadow(session, camera, bounds);
-                const casters = new Set(elements.map(element => element.mesh));
                 render_scene.traverse(node => {
                     if (node.isMesh || node.isLight) {
                         cast_snapshots.set(node, node.castShadow);
@@ -2137,10 +2253,14 @@
                 });
                 Object.assign(renderer.shadowMap, {enabled: true, type: THREE.PCFShadowMap, autoUpdate: true, needsUpdate: true});
                 render_scene.add(session.receiver, session.light, session.light.target);
+            }
+            if (session.light || session.lighting_uniforms) {
                 buffer_wrapper = function(render_camera, scene_argument, geometry, material, object, group) {
-                    if (render_camera === session.light.shadow.camera && casters.has(object)) {
+                    if (render_camera === session.light?.shadow.camera && casters.has(object)) {
                         const source = Array.isArray(object.material) ? object.material[group?.materialIndex || 0] : object.material;
                         if (source) material = get_depth_material(session, source);
+                    } else if (render_camera === camera && session.lighting_uniforms && lit_meshes.has(object)) {
+                        material = get_lighting_material(session, material);
                     }
                     return original_buffer_render.call(this, render_camera, scene_argument, geometry, material, object, group);
                 };
@@ -2151,8 +2271,8 @@
             if (session.floor) render_scene.remove(session.floor);
             if (session.light) {
                 render_scene.remove(session.receiver, session.light, session.light.target);
-                if (renderer.renderBufferDirect === buffer_wrapper) renderer.renderBufferDirect = original_buffer_render;
             }
+            if (renderer.renderBufferDirect === buffer_wrapper) renderer.renderBufferDirect = original_buffer_render;
             cast_snapshots.forEach((value, node) => node.castShadow = value);
             uv_snapshots.forEach((array, attribute) => {
                 attribute.array.set(array);
@@ -2199,6 +2319,8 @@
         }
         session.depth_materials.forEach(material => material.dispose());
         session.depth_materials.clear();
+        session.lighting_materials.forEach(entry => entry.material.dispose());
+        session.lighting_materials.clear();
         if (active_session === session) active_session = null;
         restore_capture_animation(session);
         if (session.preview_request) {
@@ -2243,6 +2365,7 @@
             session.anchor = null;
             session.floor_right = null;
             session.shadow_bounds = null;
+            session.lighting_direction = null;
         };
         session.gif_format = ScreencamGIFFormats[options.format || 'gif'];
         session.had_frame_handler = Object.hasOwnProperty.call(session.gif_format, 'frameRendered');
@@ -2485,7 +2608,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.3.2',
+        version: '3.4.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -2534,7 +2657,7 @@
             wrapped_open = function(...args) {
                 const result = previous_open?.apply(this, args);
                 const values = read_values();
-                this.setFormValues({[export_field]: values.enabled});
+                this.setFormValues({[export_field]: values.enabled, ...Object.fromEntries(lighting_keys.map(key => [plugin_id + '_' + key, values[key]]))});
                 update_animation_fields(this);
                 return result;
             };
@@ -2542,7 +2665,7 @@
             previous_confirm = Screencam.gif_options_dialog.onConfirm;
             wrapped_confirm = function(form_data) {
                 if (Project && form_data[animation_field]) animation_choices.set(Project, form_data[animation_field]);
-                return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
+                return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] || form_data[plugin_id + '_lighting_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
             };
             Screencam.gif_options_dialog.onConfirm = wrapped_confirm;
             previous_create_gif = Screencam.createGif;
