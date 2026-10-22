@@ -1,744 +1,211 @@
 (function() {
     const plugin_id = 'modeler_toolkit';
     const messages = {
-        "export_texture_backups": {
-            "en": "Export Texture / UV Backups",
-            "fr": "Exporter les sauvegardes des textures et UV"
-        },
-        "texture_uv_backups": {
-            "en": "Texture and UV Backups",
-            "fr": "Sauvegardes des textures et UV"
-        },
-        "close": {
-            "en": "Close",
-            "fr": "Fermer"
-        },
-        "incompatible_backup_preserved": {
-            "en": "This backup no longer matches the current project. It has been preserved without applying it. You can optimize again from the current textures and UVs, or export all backups for recovery.",
-            "fr": "Cette sauvegarde ne correspond plus au projet actuel. Elle est conservée sans être appliquée. Vous pouvez relancer l’optimisation depuis les textures et UV actuels, ou exporter toutes les sauvegardes pour les récupérer."
-        },
-        "previous_backups_preserved": {
-            "en": "Restore returns to the state immediately before this optimization. Earlier backups remain embedded in the project and can be exported.",
-            "fr": "La restauration revient à l’état juste avant cette optimisation. Les sauvegardes antérieures restent dans le projet et peuvent être exportées."
-        },
-        "rebuild_textures_and_share_matching_uvs": {
-            "en": "Rebuild textures and share identical UV regions",
-            "fr": "Reconstruire les textures et mutualiser les UV identiques"
-        },
-        "fewer_texture_pixels": {
-            "en": "% fewer texture pixels.",
-            "fr": " % de pixels de texture en moins."
-        },
-        "optimize_texture_and_uvs": {
-            "en": "Optimize Texture and UVs",
-            "fr": "Optimiser la texture et les UV"
-        },
-        "enable_dynamic_gif_render": {
-            "en": "Enable Dynamic GIF Render",
-            "fr": "Activer le rendu GIF dynamique"
-        },
-        "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": {
-            "en": "Use the dynamic renderer by default when recording a GIF, APNG or PNG sequence.",
-            "fr": "Utiliser le rendu dynamique par défaut lors de l’enregistrement d’un GIF, d’un APNG ou d’une séquence PNG."
-        },
-        "dynamic_shadow": {
-            "en": "Dynamic Shadow",
-            "fr": "Ombre dynamique"
-        },
-        "project_the_animated_model_onto_an_invisible_wall_or_floor_using": {
-            "en": "Project the animated model onto an invisible wall or floor using a shadow map.",
-            "fr": "Projeter l’ombre du modèle animé sur un mur ou un sol invisible à l’aide d’une carte d’ombres."
-        },
-        "shadow_color_tool_settings": {
-            "en": "Shadow Color / Tool Settings",
-            "fr": "Couleur de l’ombre / Paramètres des outils"
-        },
-        "open_the_color_picker_and_all_modeler_toolkit_settings": {
-            "en": "Open the color picker and all Modeler Toolkit settings.",
-            "fr": "Ouvrir le sélecteur de couleur et tous les paramètres de Modeler Toolkit."
-        },
-        "shadow_opacity": {
-            "en": "Shadow Opacity (%)",
-            "fr": "Opacité de l’ombre (%)"
-        },
-        "partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain": {
-            "en": "Partial opacity needs an opaque GIF background or APNG to retain smooth transparency.",
-            "fr": "Une opacité partielle nécessite un fond GIF opaque ou le format APNG pour conserver une transparence progressive."
-        },
-        "shadow_softness": {
-            "en": "Shadow Softness",
-            "fr": "Flou de l’ombre"
-        },
-        "shadow_map_filter_radius_zero_produces_a_sharp_shadow": {
-            "en": "Shadow map filter radius. Zero produces a sharp shadow.",
-            "fr": "Rayon du filtre de la carte d’ombres. Une valeur de zéro produit une ombre nette."
-        },
-        "shadow_surface": {
-            "en": "Shadow Surface",
-            "fr": "Surface de projection de l’ombre"
-        },
-        "automatic_wall_behind_the_model": {
-            "en": "Automatic wall behind the model",
-            "fr": "Mur placé automatiquement derrière le modèle"
-        },
-        "floor_below_the_model": {
-            "en": "Floor below the model",
-            "fr": "Sol sous le modèle"
-        },
-        "surface_distance": {
-            "en": "Surface Distance (%)",
-            "fr": "Distance de la surface (%)"
-        },
-        "extra_distance_from_the_model_relative_to_its_size_placement_is": {
-            "en": "Extra distance from the model, relative to its size. Placement is automatic.",
-            "fr": "Distance supplémentaire par rapport au modèle, proportionnelle à sa taille. Le placement est automatique."
-        },
-        "light_horizontal": {
-            "en": "Light Horizontal (%)",
-            "fr": "Direction horizontale de la lumière (%)"
-        },
-        "negative_values_light_the_model_from_the_left_and_cast_the_shado": {
-            "en": "Negative values light the model from the left and cast the shadow to the right.",
-            "fr": "Les valeurs négatives éclairent le modèle depuis la gauche et projettent l’ombre vers la droite."
-        },
-        "light_vertical_direction": {
-            "en": "Light Vertical Direction (%)",
-            "fr": "Direction verticale de la lumière (%)"
-        },
-        "positive_values_light_the_model_from_above_when_using_the_wall": {
-            "en": "Positive values light the model from above when using the wall.",
-            "fr": "Les valeurs positives éclairent le modèle depuis le haut lorsque le mur est utilisé."
-        },
-        "shadow_map_resolution": {
-            "en": "Shadow Map Resolution",
-            "fr": "Résolution de la carte d’ombres"
-        },
-        "clean_texture_edges": {
-            "en": "Clean Texture Edges",
-            "fr": "Nettoyer les bords des textures"
-        },
-        "temporarily_inset_uvs_during_rendering_model_uvs_and_undo_histor": {
-            "en": "Temporarily inset UVs during rendering. Model UVs and undo history stay unchanged.",
-            "fr": "Réduire temporairement les UV pendant le rendu. Les UV du modèle et l’historique d’annulation restent inchangés."
-        },
-        "texture_edge_margin": {
-            "en": "Texture Edge Margin",
-            "fr": "Marge des bords de texture"
-        },
-        "inset_in_texture_uv_units_zero_disables_temporary_cleanup": {
-            "en": "Inset in texture UV units. Zero disables temporary cleanup.",
-            "fr": "Retrait en unités UV de texture. La valeur zéro désactive le nettoyage temporaire."
-        },
-        "watermark_text": {
-            "en": "Watermark Text",
-            "fr": "Texte du filigrane"
-        },
-        "a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia": {
-            "en": "A single line of text. Enable or disable it in the GIF export dialog.",
-            "fr": "Une seule ligne de texte. Activez ou désactivez le filigrane dans la fenêtre d’export GIF."
-        },
-        "watermark_position": {
-            "en": "Watermark Position",
-            "fr": "Position du filigrane"
-        },
-        "bottom_center": {
-            "en": "Bottom center",
-            "fr": "En bas au centre"
-        },
-        "bottom_left": {
-            "en": "Bottom left",
-            "fr": "En bas à gauche"
-        },
-        "bottom_right": {
-            "en": "Bottom right",
-            "fr": "En bas à droite"
-        },
-        "center_left": {
-            "en": "Center left",
-            "fr": "Au centre à gauche"
-        },
-        "center": {
-            "en": "Center",
-            "fr": "Au centre"
-        },
-        "center_right": {
-            "en": "Center right",
-            "fr": "Au centre à droite"
-        },
-        "top_left": {
-            "en": "Top left",
-            "fr": "En haut à gauche"
-        },
-        "top_center": {
-            "en": "Top center",
-            "fr": "En haut au centre"
-        },
-        "top_right": {
-            "en": "Top right",
-            "fr": "En haut à droite"
-        },
-        "watermark_color": {
-            "en": "Watermark Color",
-            "fr": "Couleur du filigrane"
-        },
-        "watermark_text_size": {
-            "en": "Watermark Text Size (%)",
-            "fr": "Taille du texte du filigrane (%)"
-        },
-        "font_size_relative_to_the_shorter_side_of_the_final_image_long_t": {
-            "en": "Font size relative to the shorter side of the final image. Long text automatically shrinks to fit.",
-            "fr": "Taille de la police proportionnelle au côté le plus court de l’image finale. Les textes longs sont automatiquement réduits pour tenir dans l’image."
-        },
-        "watermark_margin": {
-            "en": "Watermark Margin (%)",
-            "fr": "Marge du filigrane (%)"
-        },
-        "distance_from_the_final_image_edges_relative_to_its_shorter_side": {
-            "en": "Distance from the final image edges, relative to its shorter side.",
-            "fr": "Distance par rapport aux bords de l’image finale, proportionnelle à son côté le plus court."
-        },
-        "watermark_font": {
-            "en": "Watermark Font",
-            "fr": "Police du filigrane"
-        },
-        "fonts_installed_on_this_computer_including_custom_fonts": {
-            "en": "Fonts installed on this computer, including custom fonts.",
-            "fr": "Polices installées sur cet ordinateur, y compris les polices personnalisées."
-        },
-        "enable_uv_cleanup_restoration": {
-            "en": "Enable UV Cleanup / Restoration",
-            "fr": "Activer le nettoyage / la restauration des UV"
-        },
-        "clean_selected_model_uvs_and_restore_the_saved_originals": {
-            "en": "Clean selected model UVs and restore the saved originals.",
-            "fr": "Nettoyer les UV de la sélection et restaurer les UV d’origine sauvegardés."
-        },
-        "enable_texture_uv_optimization": {
-            "en": "Enable Texture / UV Optimization",
-            "fr": "Activer l’optimisation des textures et des UV"
-        },
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": {
-            "en": "Rebuild a clean square texture, share identical UV regions and reduce dimensions when possible.",
-            "fr": "Reconstruire une texture carrée propre, mutualiser les régions UV identiques et réduire les dimensions lorsque c’est possible."
-        },
-        "power_of_two_texture_atlas": {
-            "en": "Power-of-Two Texture Atlas",
-            "fr": "Texture carrée en puissance de deux"
-        },
-        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": {
-            "en": "Use square sizes 16, 32, 64, etc. Disabled uses square multiples of 16, as the native generator with Power of Two disabled.",
-            "fr": "Utiliser des dimensions carrées de 16, 32, 64, etc. Si cette option est désactivée, utiliser des multiples de 16, comme le générateur natif sans l’option « Puissance de deux »."
-        },
-        "enable_inverted_cubes": {
-            "en": "Enable Inverted Cubes",
-            "fr": "Activer les cubes inversés"
-        },
-        "create_inward_facing_copies_named_name_inverted": {
-            "en": "Create inward facing copies named <name>_inverted.",
-            "fr": "Créer des copies aux faces orientées vers l’intérieur, nommées <nom>_inverted."
-        },
-        "enable_outlines": {
-            "en": "Enable Outlines",
-            "fr": "Activer les contours"
-        },
-        "create_outline_shells_named_name_outline": {
-            "en": "Create outline shells named <name>_outline.",
-            "fr": "Créer des enveloppes de contour nommées <nom>_outline."
-        },
-        "enable_java_version_selector": {
-            "en": "Enable Java Version Selector",
-            "fr": "Activer le sélecteur de version Java"
-        },
-        "choose_a_supported_java_model_version_when_converting_a_project": {
-            "en": "Choose a supported Java model version when converting a project.",
-            "fr": "Choisir une version de modèle Java prise en charge lors de la conversion d’un projet."
-        },
-        "enable_layer_controls": {
-            "en": "Enable Layer Controls",
-            "fr": "Activer les outils de calques"
-        },
-        "toggle_or_isolate_elements_and_groups_containing_layer": {
-            "en": "Toggle or isolate elements and groups containing _layer.",
-            "fr": "Afficher, masquer ou isoler les éléments et groupes dont le nom contient _layer."
-        },
-        "plugin_settings": {
-            "en": "Plugin settings",
-            "fr": "Paramètres du plugin"
-        },
-        "top": {
-            "en": "Top",
-            "fr": "En haut"
-        },
-        "left": {
-            "en": "Left",
-            "fr": "À gauche"
-        },
-        "front": {
-            "en": "Front",
-            "fr": "De face"
-        },
-        "right": {
-            "en": "Right",
-            "fr": "À droite"
-        },
-        "bottom": {
-            "en": "Bottom",
-            "fr": "En bas"
-        },
-        "custom_direction": {
-            "en": "Custom direction",
-            "fr": "Direction personnalisée"
-        },
-        "local_font_access_is_unavailable_allow_local_font_access_in_your": {
-            "en": "Local font access is unavailable. Allow local font access in your browser.",
-            "fr": "L’accès aux polices locales est indisponible. Autorisez cet accès dans votre navigateur."
-        },
-        "unavailable": {
-            "en": " (Unavailable)",
-            "fr": " (indisponible)"
-        },
-        "select_cubes_or_meshes_with_editable_per_face_uvs": {
-            "en": "Select cubes or meshes with editable per face UVs.",
-            "fr": "Sélectionnez des cubes ou des maillages dont les UV par face sont modifiables."
-        },
-        "apply_modeler_toolkit_uv_cleanup": {
-            "en": "Apply Modeler Toolkit UV Cleanup",
-            "fr": "Appliquer le nettoyage UV de Modeler Toolkit"
-        },
-        "mandatory_box_uv_elements_were_skipped": {
-            "en": "Mandatory box UV elements were skipped.",
-            "fr": "Les éléments imposant des UV de boîte ont été ignorés."
-        },
-        "clean_uv_edges": {
-            "en": "Clean UV Edges",
-            "fr": "Nettoyer les bords UV"
-        },
-        "margin": {
-            "en": "Margin",
-            "fr": "Marge"
-        },
-        "original_uvs_are_saved_in_the_model_restore_uvs_returns_to_that": {
-            "en": "Original UVs are saved in the model. Restore UVs returns to that saved state.",
-            "fr": "Les UV d’origine sont sauvegardés dans le modèle. L’outil « Restaurer les UV d’origine » permet de revenir à cet état."
-        },
-        "no_matching_original_uv_backup_exact_restoration_requires_uv_cle": {
-            "en": "No matching original UV backup. Exact restoration requires UV cleanup applied by Modeler Toolkit.",
-            "fr": "Aucune sauvegarde correspondante des UV d’origine. Une restauration exacte nécessite d’avoir appliqué le nettoyage avec Modeler Toolkit."
-        },
-        "restore_modeler_toolkit_uvs": {
-            "en": "Restore Modeler Toolkit UVs",
-            "fr": "Restaurer les UV avec Modeler Toolkit"
-        },
-        "select_cubes_in_a_format_supporting_per_face_uvs": {
-            "en": "Select cubes in a format supporting per face UVs.",
-            "fr": "Sélectionnez des cubes dans un format prenant en charge les UV par face."
-        },
-        "create_modeler_toolkit_inverted_cubes": {
-            "en": "Create Modeler Toolkit Inverted Cubes",
-            "fr": "Créer des cubes inversés avec Modeler Toolkit"
-        },
-        "create_modeler_toolkit_outlines": {
-            "en": "Create Modeler Toolkit Outlines",
-            "fr": "Créer des contours avec Modeler Toolkit"
-        },
-        "the_outline_texture_is_no_longer_available": {
-            "en": "The outline texture is no longer available.",
-            "fr": "La texture du contour n’est plus disponible."
-        },
-        "generate_solid_color_texture": {
-            "en": "Generate Solid Color Texture",
-            "fr": "Générer une texture de couleur unie"
-        },
-        "this_format_needs_an_existing_front_sided_texture_for_outlines": {
-            "en": "This format needs an existing front sided texture for outlines.",
-            "fr": "Ce format nécessite une texture existante dont seules les faces avant sont visibles pour créer les contours."
-        },
-        "create_outlines": {
-            "en": "Create Outlines",
-            "fr": "Créer des contours"
-        },
-        "thickness": {
-            "en": "Thickness",
-            "fr": "Épaisseur"
-        },
-        "outline_color": {
-            "en": "Outline Color",
-            "fr": "Couleur du contour"
-        },
-        "convert_project": {
-            "en": "Convert Project",
-            "fr": "Convertir le projet"
-        },
-        "conversion_may_remove_features_unsupported_by_the_target_format": {
-            "en": "Conversion may remove features unsupported by the target format. Create Copy keeps the current project.",
-            "fr": "La conversion peut supprimer les fonctionnalités non prises en charge par le format cible. L’option « Créer une copie » conserve le projet actuel."
-        },
-        "current_format": {
-            "en": "Current Format",
-            "fr": "Format actuel"
-        },
-        "java_model_version": {
-            "en": "Java Model Version",
-            "fr": "Version du modèle Java"
-        },
-        "create_copy": {
-            "en": "Create Copy",
-            "fr": "Créer une copie"
-        },
-        "no_elements_or_groups_containing_layer": {
-            "en": "No elements or groups containing _layer.",
-            "fr": "Aucun élément ni groupe dont le nom contient _layer."
-        },
-        "modeler_toolkit_texture_optimization": {
-            "en": "Modeler Toolkit - Texture Optimization",
-            "fr": "Modeler Toolkit - Optimisation des textures"
-        },
-        "box_uv_layouts_preserved": {
-            "en": "Box UV layouts preserved",
-            "fr": "Dispositions des UV de boîte conservées"
-        },
-        "textures_still_loading_or_unavailable": {
-            "en": "Textures still loading or unavailable",
-            "fr": "Textures en cours de chargement ou indisponibles"
-        },
-        "animated_layered_or_material_textures_preserved": {
-            "en": "Animated, layered or material textures preserved",
-            "fr": "Textures animées, à calques ou associées à un matériau conservées"
-        },
-        "textures_exceeding_the_safe_comparison_size": {
-            "en": "Textures exceeding the safe comparison size",
-            "fr": "Textures dépassant la taille limite de comparaison"
-        },
-        "invalid_uv_coordinates": {
-            "en": "Invalid UV coordinates",
-            "fr": "Coordonnées UV invalides"
-        },
-        "uvs_outside_the_texture_preserved": {
-            "en": "UVs outside the texture preserved",
-            "fr": "UV situés hors de la texture conservés"
-        },
-        "finish_the_current_edit_or_recording_before_optimizing_uvs": {
-            "en": "Finish the current edit or recording before optimizing UVs.",
-            "fr": "Terminez la modification ou l’enregistrement en cours avant d’optimiser les UV."
-        },
-        "layered_compositing_is_active_the_texture_stack_and_uvs_were_pre": {
-            "en": "Layered compositing is active. The texture stack and UVs were preserved.",
-            "fr": "La composition des textures par calques est active. La pile de textures et les UV ont été conservés."
-        },
-        "no_changes_were_made": {
-            "en": "No changes were made. ",
-            "fr": "Aucune modification n’a été effectuée. "
-        },
-        "no_additional_pixel_identical_uv_regions_were_found_original_tex": {
-            "en": "No additional pixel-identical UV regions were found. Original textures, dimensions and padding are unchanged.",
-            "fr": "Aucune région UV supplémentaire identique au pixel près n’a été trouvée. Les textures d’origine, leurs dimensions et le rembourrage restent inchangés."
-        },
-        "share_identical_uv_regions_without_changing_textures": {
-            "en": "Share identical UV regions without changing textures",
-            "fr": "Partager les régions UV identiques sans modifier les textures"
-        },
-        "uv_optimization_was_cancelled": {
-            "en": "UV optimization was cancelled. ",
-            "fr": "L’optimisation des UV a été annulée. "
-        },
-        "face_s_now_share_pixel_identical_uv_regions_including_rotated_or": {
-            "en": " face(s) now share pixel-identical UV regions, including rotated or mirrored matches.\nUV regions: ",
-            "fr": " face(s) partagent désormais des régions UV existantes identiques au pixel près, y compris après rotation ou retournement.\nRégions UV : "
-        },
-        "original_pixels_dimensions_padding_and_texture_assignments_are_u": {
-            "en": ".\n\nOriginal pixels, dimensions, padding and texture assignments are unchanged. UVs are adjusted to preserve face appearance and orientation. Texture resolution is not reduced automatically.\n\nUse Undo or Restore Original Textures / UVs to revert.",
-            "fr": ".\n\nLes pixels d’origine, les dimensions, le rembourrage et les textures attribuées aux faces restent inchangés. Les UV sont adaptés pour conserver le rendu et l’orientation des faces. La résolution des textures n’est pas réduite automatiquement.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière."
-        },
-        "finish_the_current_edit_or_recording_before_rebuilding_textures": {
-            "en": "Finish the current edit or recording before rebuilding textures.",
-            "fr": "Terminez la modification ou l’enregistrement en cours avant de reconstruire les textures."
-        },
-        "layered_texture_compositing_is_active_the_texture_stack_was_pres": {
-            "en": "Layered texture compositing is active. The texture stack was preserved.",
-            "fr": "La composition des textures par calques est active. La pile de textures a été conservée."
-        },
-        "some_uvs_or_element_types_require_the_original_layout": {
-            "en": ": some UVs or element types require the original layout",
-            "fr": " : certains UV ou types d’éléments nécessitent la disposition d’origine"
-        },
-        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": {
-            "en": ": no compatible square layout found with the same pixels and borders without enlarging the texture",
-            "fr": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et bordures, sans agrandir la texture"
-        },
-        "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": {
-            "en": "No compatible square texture could be rebuilt without enlargement. Original textures and UVs were preserved.",
-            "fr": "Aucune texture carrée compatible n’a pu être reconstruite sans agrandissement. Les textures et les UV d’origine ont été conservés."
-        },
-        "this_format_shares_a_non_square_uv_resolution_across_several_tex": {
-            "en": "This format shares a non-square UV resolution across several textures. Repacking it would change texture animation, so the original layout was preserved.",
-            "fr": "Ce format partage une résolution UV non carrée entre plusieurs textures. Leur réorganisation modifierait l’animation des textures ; la disposition d’origine a donc été conservée."
-        },
-        "texture_repacking_was_cancelled": {
-            "en": "Texture repacking was cancelled. ",
-            "fr": "La réorganisation des textures a été annulée. "
-        },
-        "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": {
-            "en": "Dimensions preserved: rebuilding does not require a smaller texture.",
-            "fr": "Dimensions conservées : la reconstruction ne nécessite pas de réduire la texture."
-        },
-        "uv_regions": {
-            "en": "\nUV regions: ",
-            "fr": "\nRégions UV : "
-        },
-        "identical_regions_are_shared_including_rotated_or_mirrored_match": {
-            "en": "\n\nIdentical regions are shared, including rotated or mirrored matches. Face pixels and border pixels are preserved. UVs are adjusted to preserve face appearance and orientation. No resampling or image smoothing.\n\nUse Undo or Restore Original Textures / UVs to revert. Existing image files are not overwritten automatically.",
-            "fr": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Les pixels des faces et des bordures sont conservés. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement."
-        },
-        "finish_the_current_edit_or_recording_before_restoring_textures": {
-            "en": "Finish the current edit or recording before restoring textures.",
-            "fr": "Terminez la modification ou l’enregistrement en cours avant de restaurer les textures."
-        },
-        "undo_the_project_format_or_uv_resolution_change_before_restoring": {
-            "en": "Undo the project format or UV resolution change before restoring these textures.",
-            "fr": "Annulez le changement de format du projet ou de résolution UV avant de restaurer ces textures."
-        },
-        "an_optimized_texture_is_missing_or_has_a_different_resolution_un": {
-            "en": "An optimized texture is missing or has a different resolution. Undo its replacement before restoring.",
-            "fr": "Une texture optimisée est manquante ou sa résolution a changé. Annulez son remplacement avant de lancer la restauration."
-        },
-        "an_optimized_element_has_different_faces_or_vertices_undo_its_to": {
-            "en": "An optimized element has different faces or vertices. Undo its topology change before restoring.",
-            "fr": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez cette modification de géométrie avant de lancer la restauration."
-        },
-        "new_geometry_uses_an_optimized_texture_undo_that_addition_before": {
-            "en": "New geometry uses an optimized texture. Undo that addition before restoring its original texture layout.",
-            "fr": "De nouveaux éléments utilisent une texture optimisée. Annulez leur ajout avant de restaurer la disposition d’origine de cette texture."
-        },
-        "restore_original_square_atlas_textures_and_uvs": {
-            "en": "Restore original square atlas textures and UVs",
-            "fr": "Restaurer les textures et UV d’origine de l’atlas carré"
-        },
-        "texture_restoration_was_cancelled": {
-            "en": "Texture restoration was cancelled. ",
-            "fr": "La restauration des textures a été annulée. "
-        },
-        "original_textures_uvs_and_resolution_restored": {
-            "en": "Original textures, UVs and resolution restored.",
-            "fr": "Les textures, les UV et la résolution d’origine ont été restaurés."
-        },
-        "finish_the_current_edit_or_recording_before_restoring_uvs": {
-            "en": "Finish the current edit or recording before restoring UVs.",
-            "fr": "Terminez la modification ou l’enregistrement en cours avant de restaurer les UV."
-        },
-        "undo_the_project_format_or_uv_resolution_change_before_restoring_2": {
-            "en": "Undo the project format or UV resolution change before restoring the original UVs.",
-            "fr": "Annulez le changement de format du projet ou de résolution UV avant de restaurer les UV d’origine."
-        },
-        "an_original_texture_is_missing_or_has_a_different_resolution_res": {
-            "en": "An original texture is missing or has a different resolution. Restore it before restoring these UVs.",
-            "fr": "Une texture d’origine est manquante ou sa résolution a changé. Restaurez-la avant de restaurer ces UV."
-        },
-        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_2": {
-            "en": "An optimized element has different faces or vertices. Undo its topology change before restoring these UVs.",
-            "fr": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez cette modification de géométrie avant de restaurer ces UV."
-        },
-        "restore_original_uvs_without_changing_textures": {
-            "en": "Restore original UVs without changing textures",
-            "fr": "Restaurer les UV d’origine sans modifier les textures"
-        },
-        "uv_restoration_was_cancelled": {
-            "en": "UV restoration was cancelled. ",
-            "fr": "La restauration des UV a été annulée. "
-        },
-        "original_uvs_restored_texture_images_preserved": {
-            "en": "Original UVs restored. Texture images preserved.",
-            "fr": "Les UV d’origine ont été restaurés. Les images des textures ont été conservées."
-        },
-        "this_project_has_no_texture_optimization_backup": {
-            "en": "This project has no texture optimization backup.",
-            "fr": "Ce projet ne contient aucune sauvegarde des textures avant optimisation."
-        },
-        "the_project_format_or_uv_resolution_has_changed_undo_those_chang": {
-            "en": "The project format or UV resolution has changed. Undo those changes before restoring the original textures.",
-            "fr": "Le format du projet ou la résolution UV a changé. Annulez ces modifications avant de restaurer les textures d’origine."
-        },
-        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_3": {
-            "en": "An optimized element has different faces or vertices. Undo its topology changes before restoring the original UVs.",
-            "fr": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez ces modifications de géométrie avant de restaurer les UV d’origine."
-        },
-        "an_original_texture_identifier_is_already_in_use_undo_the_textur": {
-            "en": "An original texture identifier is already in use. Undo the texture replacement before restoring.",
-            "fr": "L’identifiant d’une texture d’origine est déjà utilisé. Annulez le remplacement de cette texture avant de lancer la restauration."
-        },
-        "an_original_texture_path_is_already_in_use_undo_the_texture_repl": {
-            "en": "An original texture path is already in use. Undo the texture replacement before restoring.",
-            "fr": "Le chemin d’une texture d’origine est déjà utilisé. Annulez le remplacement de cette texture avant de lancer la restauration."
-        },
-        "new_geometry_uses_the_optimized_default_texture_undo_that_additi": {
-            "en": "New geometry uses the optimized default texture. Undo that addition before restoring in this single-texture format.",
-            "fr": "De nouveaux éléments utilisent la texture optimisée par défaut. Annulez leur ajout avant de lancer la restauration dans ce format à texture unique."
-        },
-        "restore_original_textures_and_uvs": {
-            "en": "Restore original textures and UVs",
-            "fr": "Restaurer les textures et les UV d’origine"
-        },
-        "restoration_was_cancelled": {
-            "en": "Restoration was cancelled. ",
-            "fr": "La restauration a été annulée. "
-        },
-        "original_textures_and_uvs_restored": {
-            "en": "Original textures and UVs restored.",
-            "fr": "Les textures et les UV d’origine ont été restaurés."
-        },
-        "share_uvs_keep_texture": {
-            "en": "Share UVs (Keep Texture)",
-            "fr": "Partager les UV sans modifier la texture"
-        },
-        "create_texture_blockbench": {
-            "en": "Create Texture (Blockbench)",
-            "fr": "Créer une texture (Blockbench)"
-        },
-        "restore_original_textures_uvs": {
-            "en": "Restore Original Textures / UVs",
-            "fr": "Restaurer les textures et UV d’origine"
-        },
-        "restore_original_uvs": {
-            "en": "Restore Original UVs",
-            "fr": "Restaurer les UV d’origine"
-        },
-        "create_inverted_cubes": {
-            "en": "Create Inverted Cubes",
-            "fr": "Créer des cubes inversés"
-        },
-        "convert_project_java_version": {
-            "en": "Convert Project / Java Version",
-            "fr": "Convertir le projet / Version Java"
-        },
-        "modeler_toolkit_settings": {
-            "en": "Modeler Toolkit Settings",
-            "fr": "Paramètres de Modeler Toolkit"
-        },
-        "toggle_layers": {
-            "en": "Toggle Layers",
-            "fr": "Afficher / masquer les calques"
-        },
-        "show_only_layers": {
-            "en": "Show Only Layers",
-            "fr": "Afficher uniquement les calques"
-        },
-        "modeler_toolkit": {
-            "en": "Modeler Toolkit",
-            "fr": "Modeler Toolkit"
-        },
-        "available_tools": {
-            "en": "Available Tools",
-            "fr": "Outils disponibles"
-        },
-        "gif_render_the_invisible_wall_or_floor_only_receives_the_shadow": {
-            "en": "GIF render: the invisible wall or floor only receives the shadow. Use an opaque GIF background or APNG for soft, partially transparent shadows.",
-            "fr": "Rendu GIF : le mur ou le sol invisible reçoit uniquement l’ombre. Utilisez un fond GIF opaque ou le format APNG pour des ombres douces et partiellement transparentes."
-        },
-        "the_installed_font_list_is_unavailable_reopen_settings_after_all": {
-            "en": "The installed font list is unavailable. Reopen settings after allowing local font access.",
-            "fr": "La liste des polices installées est indisponible. Autorisez l’accès aux polices locales, puis rouvrez les paramètres."
-        },
-        "preview": {
-            "en": "Preview",
-            "fr": "Aperçu"
-        },
-        "reset_to_defaults": {
-            "en": "Reset to Defaults",
-            "fr": "Rétablir les valeurs par défaut"
-        },
-        "preview_gif_render": {
-            "en": "Preview GIF Render",
-            "fr": "Aperçu du rendu GIF"
-        },
-        "back_to_settings": {
-            "en": "Back to Settings",
-            "fr": "Retour aux paramètres"
-        },
-        "modeler_toolkit_watermark": {
-            "en": "Modeler Toolkit Watermark",
-            "fr": "Filigrane de Modeler Toolkit"
-        },
-        "unnamed_animation": {
-            "en": "Unnamed Animation",
-            "fr": "Animation sans nom"
-        },
-        "animation_to_record": {
-            "en": "Animation to Record",
-            "fr": "Animation à enregistrer"
-        },
-        "record_this_animation_from_any_editor_mode": {
-            "en": "Record this animation from any editor mode.",
-            "fr": "Enregistrer cette animation depuis n’importe quel mode de l’éditeur."
-        },
-        "shadow_light_direction": {
-            "en": "Shadow Light Direction",
-            "fr": "Direction de la lumière de l’ombre"
-        },
-        "choose_where_the_light_comes_from_for_this_export_the_shadow_pro": {
-            "en": "Choose where the light comes from for this export. The shadow projects in the opposite direction.",
-            "fr": "Choisissez la provenance de la lumière pour cet export. L’ombre est projetée dans la direction opposée."
-        },
-        "negative_light_from_the_left_positive_light_from_the_right": {
-            "en": "Negative: light from the left. Positive: light from the right.",
-            "fr": "Valeur négative : lumière depuis la gauche. Valeur positive : lumière depuis la droite."
-        },
-        "light_vertical_depth": {
-            "en": "Light Vertical / Depth (%)",
-            "fr": "Direction verticale / Profondeur de la lumière (%)"
-        },
-        "negative_light_from_below_positive_light_from_above_on_a_floor_t": {
-            "en": "Negative: light from below. Positive: light from above. On a floor this adjusts depth.",
-            "fr": "Valeur négative : lumière depuis le bas. Valeur positive : lumière depuis le haut. Sur un sol, ce réglage ajuste la profondeur."
-        },
-        "modeler_toolkit_capture_stopped": {
-            "en": "Modeler Toolkit capture stopped: ",
-            "fr": "L’enregistrement Modeler Toolkit s’est arrêté : "
-        },
-        "open_a_model_and_finish_the_current_recording_before_previewing": {
-            "en": "Open a model and finish the current recording before previewing.",
-            "fr": "Ouvrez un modèle et terminez l’enregistrement en cours avant de lancer l’aperçu."
-        },
-        "rebuild_textures_and_uvs_create_outlines_and_record_animations_w": {
-            "en": "Rebuild textures and UVs, create outlines and record animations with configurable shadows and watermarks.",
-            "fr": "Reconstruire les textures et les UV, créer des contours et enregistrer des animations avec des ombres et un filigrane personnalisables."
-        },
-        "uv_tools_outlines_java_conversion_layer_controls_dynamic_shadows": {
-            "en": "UV tools, outlines, Java conversion, layer controls, dynamic shadows and watermark. See the repository for usage instructions and the MIT license.",
-            "fr": "Outils UV, contours, conversion Java, calques, ombres dynamiques et filigrane. Voir le dépôt pour le mode d’emploi et la licence MIT."
-        },
-        "dynamic_shadow_clean_render": {
-            "en": "Dynamic Shadow / Clean Render",
-            "fr": "Ombre dynamique / Rendu propre"
-        },
-        "use_modeler_toolkit_render_settings_for_this_export": {
-            "en": "Use Modeler Toolkit render settings for this export.",
-            "fr": "Utiliser les réglages de rendu de Modeler Toolkit pour cet export."
-        },
-        "watermark": {
-            "en": "Watermark",
-            "fr": "Filigrane"
-        },
-        "add_your_configured_text_to_every_frame_independently_of_dynamic": {
-            "en": "Add your configured text to every frame, independently of Dynamic Shadow / Clean Render.",
-            "fr": "Ajouter le texte configuré à chaque image, indépendamment de l’option « Ombre dynamique / Rendu propre »."
-        },
-        "watermark_settings": {
-            "en": "Watermark Settings",
-            "fr": "Paramètres du filigrane"
-        },
-        "finish_or_cancel_the_current_gif_recording_first": {
-            "en": "Finish or cancel the current GIF recording first.",
-            "fr": "Terminez ou annulez d’abord l’enregistrement GIF en cours."
-        },
-        "choose_an_animation_available_in_this_project_before_recording": {
-            "en": "Choose an animation available in this project before recording.",
-            "fr": "Choisissez une animation disponible dans ce projet avant de lancer l’enregistrement."
-        }
+        "capture_floor": "Sol de rendu",
+        "capture_floor_description": "Ajouter un sol temporaire qui reçoit l’ombre configurée. Un bloc correspond à 16 unités du modèle.",
+        "floor_style": "Aspect du sol",
+        "floor_tiles": "Dalles",
+        "floor_solid": "Uni",
+        "floor_width": "Largeur du sol (blocs)",
+        "floor_depth": "Profondeur du sol (blocs)",
+        "floor_tile_size": "Taille des dalles (blocs)",
+        "floor_color": "Couleur du sol",
+        "floor_seam_color": "Couleur des joints",
+        "floor_thickness": "Épaisseur du sol (unités)",
+        "floor_height": "Décalage vertical du sol (unités)",
+        "floor_height_description": "Par rapport au bas du modèle à la première image. Le sol reste fixe pendant tout l’enregistrement.",
+        "floor_offset_x": "Décalage X du sol (unités)",
+        "floor_offset_z": "Décalage Z du sol (unités)",
+        "back_to_recording": "Retour à l’enregistrement",
+        "export_texture_backups": "Exporter les sauvegardes des textures et UV",
+        "texture_uv_backups": "Sauvegardes des textures et UV",
+        "close": "Fermer",
+        "incompatible_backup_preserved": "Cette sauvegarde ne correspond plus au projet actuel. Elle est conservée sans être appliquée. Vous pouvez relancer l’optimisation depuis les textures et UV actuels, ou exporter toutes les sauvegardes pour les récupérer.",
+        "previous_backups_preserved": "La restauration revient à l’état juste avant cette optimisation. Les sauvegardes antérieures restent dans le projet et peuvent être exportées.",
+        "rebuild_textures_and_share_matching_uvs": "Reconstruire les textures et mutualiser les UV identiques",
+        "fewer_texture_pixels": " % de pixels de texture en moins.",
+        "optimize_texture_and_uvs": "Optimiser la texture et les UV",
+        "enable_dynamic_gif_render": "Activer le rendu GIF dynamique",
+        "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": "Utiliser le rendu dynamique par défaut lors de l’enregistrement d’un GIF, d’un APNG ou d’une séquence PNG.",
+        "dynamic_shadow": "Ombre dynamique",
+        "project_the_animated_model_onto_an_invisible_wall_or_floor_using": "Projeter l’ombre du modèle animé sur un mur ou un sol invisible à l’aide d’une carte d’ombres.",
+        "shadow_color_tool_settings": "Couleur de l’ombre / Paramètres des outils",
+        "open_the_color_picker_and_all_modeler_toolkit_settings": "Ouvrir le sélecteur de couleur et tous les paramètres de Modeler Toolkit.",
+        "shadow_opacity": "Opacité de l’ombre (%)",
+        "partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain": "Une opacité partielle nécessite un fond GIF opaque ou le format APNG pour conserver une transparence progressive.",
+        "shadow_softness": "Flou de l’ombre",
+        "shadow_map_filter_radius_zero_produces_a_sharp_shadow": "Rayon du filtre de la carte d’ombres. Une valeur de zéro produit une ombre nette.",
+        "shadow_surface": "Surface de projection de l’ombre",
+        "automatic_wall_behind_the_model": "Mur placé automatiquement derrière le modèle",
+        "floor_below_the_model": "Sol sous le modèle",
+        "surface_distance": "Distance de la surface (%)",
+        "extra_distance_from_the_model_relative_to_its_size_placement_is": "Distance supplémentaire par rapport au modèle, proportionnelle à sa taille. Le placement est automatique.",
+        "light_horizontal": "Direction horizontale de la lumière (%)",
+        "negative_values_light_the_model_from_the_left_and_cast_the_shado": "Les valeurs négatives éclairent le modèle depuis la gauche et projettent l’ombre vers la droite.",
+        "light_vertical_direction": "Direction verticale de la lumière (%)",
+        "positive_values_light_the_model_from_above_when_using_the_wall": "Les valeurs positives éclairent le modèle depuis le haut lorsque le mur est utilisé.",
+        "shadow_map_resolution": "Résolution de la carte d’ombres",
+        "clean_texture_edges": "Nettoyer les bords des textures",
+        "temporarily_inset_uvs_during_rendering_model_uvs_and_undo_histor": "Réduire temporairement les UV pendant le rendu. Les UV du modèle et l’historique d’annulation restent inchangés.",
+        "texture_edge_margin": "Marge des bords de texture",
+        "inset_in_texture_uv_units_zero_disables_temporary_cleanup": "Retrait en unités UV de texture. La valeur zéro désactive le nettoyage temporaire.",
+        "watermark_text": "Texte du filigrane",
+        "a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia": "Une seule ligne de texte. Activez ou désactivez le filigrane dans la fenêtre d’export GIF.",
+        "watermark_position": "Position du filigrane",
+        "bottom_center": "En bas au centre",
+        "bottom_left": "En bas à gauche",
+        "bottom_right": "En bas à droite",
+        "center_left": "Au centre à gauche",
+        "center": "Au centre",
+        "center_right": "Au centre à droite",
+        "top_left": "En haut à gauche",
+        "top_center": "En haut au centre",
+        "top_right": "En haut à droite",
+        "watermark_color": "Couleur du filigrane",
+        "watermark_text_size": "Taille du texte du filigrane (%)",
+        "font_size_relative_to_the_shorter_side_of_the_final_image_long_t": "Taille de la police proportionnelle au côté le plus court de l’image finale. Les textes longs sont automatiquement réduits pour tenir dans l’image.",
+        "watermark_margin": "Marge du filigrane (%)",
+        "distance_from_the_final_image_edges_relative_to_its_shorter_side": "Distance par rapport aux bords de l’image finale, proportionnelle à son côté le plus court.",
+        "watermark_font": "Police du filigrane",
+        "fonts_installed_on_this_computer_including_custom_fonts": "Polices installées sur cet ordinateur, y compris les polices personnalisées.",
+        "enable_uv_cleanup_restoration": "Activer le nettoyage / la restauration des UV",
+        "clean_selected_model_uvs_and_restore_the_saved_originals": "Nettoyer les UV de la sélection et restaurer les UV d’origine sauvegardés.",
+        "enable_texture_uv_optimization": "Activer l’optimisation des textures et des UV",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire une texture carrée propre, mutualiser les régions UV identiques et réduire les dimensions lorsque c’est possible.",
+        "power_of_two_texture_atlas": "Texture carrée en puissance de deux",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Utiliser des dimensions carrées de 16, 32, 64, etc. Si cette option est désactivée, utiliser des multiples de 16, comme le générateur natif sans l’option « Puissance de deux ».",
+        "enable_inverted_cubes": "Activer les cubes inversés",
+        "create_inward_facing_copies_named_name_inverted": "Créer des copies aux faces orientées vers l’intérieur, nommées <nom>_inverted.",
+        "enable_outlines": "Activer les contours",
+        "create_outline_shells_named_name_outline": "Créer des enveloppes de contour nommées <nom>_outline.",
+        "enable_layer_controls": "Activer les outils de calques",
+        "toggle_or_isolate_elements_and_groups_containing_layer": "Afficher, masquer ou isoler les éléments et groupes dont le nom contient _layer.",
+        "plugin_settings": "Paramètres du plugin",
+        "top": "En haut",
+        "left": "À gauche",
+        "front": "De face",
+        "right": "À droite",
+        "bottom": "En bas",
+        "custom_direction": "Direction personnalisée",
+        "local_font_access_is_unavailable_allow_local_font_access_in_your": "L’accès aux polices locales est indisponible. Autorisez cet accès dans votre navigateur.",
+        "unavailable": " (indisponible)",
+        "select_cubes_or_meshes_with_editable_per_face_uvs": "Sélectionnez des cubes ou des maillages dont les UV par face sont modifiables.",
+        "apply_modeler_toolkit_uv_cleanup": "Appliquer le nettoyage UV de Modeler Toolkit",
+        "mandatory_box_uv_elements_were_skipped": "Les éléments imposant des UV de boîte ont été ignorés.",
+        "clean_uv_edges": "Nettoyer les bords UV",
+        "margin": "Marge",
+        "original_uvs_are_saved_in_the_model_restore_uvs_returns_to_that": "Les UV d’origine sont sauvegardés dans le modèle. L’outil « Restaurer les UV d’origine » permet de revenir à cet état.",
+        "no_matching_original_uv_backup_exact_restoration_requires_uv_cle": "Aucune sauvegarde correspondante des UV d’origine. Une restauration exacte nécessite d’avoir appliqué le nettoyage avec Modeler Toolkit.",
+        "restore_modeler_toolkit_uvs": "Restaurer les UV avec Modeler Toolkit",
+        "select_cubes_in_a_format_supporting_per_face_uvs": "Sélectionnez des cubes dans un format prenant en charge les UV par face.",
+        "create_modeler_toolkit_inverted_cubes": "Créer des cubes inversés avec Modeler Toolkit",
+        "create_modeler_toolkit_outlines": "Créer des contours avec Modeler Toolkit",
+        "the_outline_texture_is_no_longer_available": "La texture du contour n’est plus disponible.",
+        "generate_solid_color_texture": "Générer une texture de couleur unie",
+        "this_format_needs_an_existing_front_sided_texture_for_outlines": "Ce format nécessite une texture existante dont seules les faces avant sont visibles pour créer les contours.",
+        "create_outlines": "Créer des contours",
+        "thickness": "Épaisseur",
+        "outline_color": "Couleur du contour",
+        "no_elements_or_groups_containing_layer": "Aucun élément ni groupe dont le nom contient _layer.",
+        "modeler_toolkit_texture_optimization": "Modeler Toolkit - Optimisation des textures",
+        "box_uv_layouts_preserved": "Dispositions des UV de boîte conservées",
+        "textures_still_loading_or_unavailable": "Textures en cours de chargement ou indisponibles",
+        "animated_layered_or_material_textures_preserved": "Textures animées, à calques ou associées à un matériau conservées",
+        "textures_exceeding_the_safe_comparison_size": "Textures dépassant la taille limite de comparaison",
+        "invalid_uv_coordinates": "Coordonnées UV invalides",
+        "uvs_outside_the_texture_preserved": "UV situés hors de la texture conservés",
+        "finish_the_current_edit_or_recording_before_optimizing_uvs": "Terminez la modification ou l’enregistrement en cours avant d’optimiser les UV.",
+        "layered_compositing_is_active_the_texture_stack_and_uvs_were_pre": "La composition des textures par calques est active. La pile de textures et les UV ont été conservés.",
+        "no_changes_were_made": "Aucune modification n’a été effectuée. ",
+        "no_additional_pixel_identical_uv_regions_were_found_original_tex": "Aucune région UV supplémentaire identique au pixel près n’a été trouvée. Les textures d’origine, leurs dimensions et le rembourrage restent inchangés.",
+        "share_identical_uv_regions_without_changing_textures": "Partager les régions UV identiques sans modifier les textures",
+        "uv_optimization_was_cancelled": "L’optimisation des UV a été annulée. ",
+        "face_s_now_share_pixel_identical_uv_regions_including_rotated_or": " face(s) partagent désormais des régions UV existantes identiques au pixel près, y compris après rotation ou retournement.\nRégions UV : ",
+        "original_pixels_dimensions_padding_and_texture_assignments_are_u": ".\n\nLes pixels d’origine, les dimensions, le rembourrage et les textures attribuées aux faces restent inchangés. Les UV sont adaptés pour conserver le rendu et l’orientation des faces. La résolution des textures n’est pas réduite automatiquement.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière.",
+        "finish_the_current_edit_or_recording_before_rebuilding_textures": "Terminez la modification ou l’enregistrement en cours avant de reconstruire les textures.",
+        "layered_texture_compositing_is_active_the_texture_stack_was_pres": "La composition des textures par calques est active. La pile de textures a été conservée.",
+        "some_uvs_or_element_types_require_the_original_layout": " : certains UV ou types d’éléments nécessitent la disposition d’origine",
+        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et bordures, sans agrandir la texture",
+        "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture carrée compatible n’a pu être reconstruite sans agrandissement. Les textures et les UV d’origine ont été conservés.",
+        "this_format_shares_a_non_square_uv_resolution_across_several_tex": "Ce format partage une résolution UV non carrée entre plusieurs textures. Leur réorganisation modifierait l’animation des textures ; la disposition d’origine a donc été conservée.",
+        "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
+        "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions conservées : la reconstruction ne nécessite pas de réduire la texture.",
+        "uv_regions": "\nRégions UV : ",
+        "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Les pixels des faces et des bordures sont conservés. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement.",
+        "finish_the_current_edit_or_recording_before_restoring_textures": "Terminez la modification ou l’enregistrement en cours avant de restaurer les textures.",
+        "undo_the_project_format_or_uv_resolution_change_before_restoring": "Annulez le changement de format du projet ou de résolution UV avant de restaurer ces textures.",
+        "an_optimized_texture_is_missing_or_has_a_different_resolution_un": "Une texture optimisée est manquante ou sa résolution a changé. Annulez son remplacement avant de lancer la restauration.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez cette modification de géométrie avant de lancer la restauration.",
+        "new_geometry_uses_an_optimized_texture_undo_that_addition_before": "De nouveaux éléments utilisent une texture optimisée. Annulez leur ajout avant de restaurer la disposition d’origine de cette texture.",
+        "restore_original_square_atlas_textures_and_uvs": "Restaurer les textures et UV d’origine de l’atlas carré",
+        "texture_restoration_was_cancelled": "La restauration des textures a été annulée. ",
+        "original_textures_uvs_and_resolution_restored": "Les textures, les UV et la résolution d’origine ont été restaurés.",
+        "finish_the_current_edit_or_recording_before_restoring_uvs": "Terminez la modification ou l’enregistrement en cours avant de restaurer les UV.",
+        "undo_the_project_format_or_uv_resolution_change_before_restoring_2": "Annulez le changement de format du projet ou de résolution UV avant de restaurer les UV d’origine.",
+        "an_original_texture_is_missing_or_has_a_different_resolution_res": "Une texture d’origine est manquante ou sa résolution a changé. Restaurez-la avant de restaurer ces UV.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_2": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez cette modification de géométrie avant de restaurer ces UV.",
+        "restore_original_uvs_without_changing_textures": "Restaurer les UV d’origine sans modifier les textures",
+        "uv_restoration_was_cancelled": "La restauration des UV a été annulée. ",
+        "original_uvs_restored_texture_images_preserved": "Les UV d’origine ont été restaurés. Les images des textures ont été conservées.",
+        "this_project_has_no_texture_optimization_backup": "Ce projet ne contient aucune sauvegarde des textures avant optimisation.",
+        "the_project_format_or_uv_resolution_has_changed_undo_those_chang": "Le format du projet ou la résolution UV a changé. Annulez ces modifications avant de restaurer les textures d’origine.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_3": "Les faces ou les sommets d’un élément optimisé ont changé. Annulez ces modifications de géométrie avant de restaurer les UV d’origine.",
+        "an_original_texture_identifier_is_already_in_use_undo_the_textur": "L’identifiant d’une texture d’origine est déjà utilisé. Annulez le remplacement de cette texture avant de lancer la restauration.",
+        "an_original_texture_path_is_already_in_use_undo_the_texture_repl": "Le chemin d’une texture d’origine est déjà utilisé. Annulez le remplacement de cette texture avant de lancer la restauration.",
+        "new_geometry_uses_the_optimized_default_texture_undo_that_additi": "De nouveaux éléments utilisent la texture optimisée par défaut. Annulez leur ajout avant de lancer la restauration dans ce format à texture unique.",
+        "restore_original_textures_and_uvs": "Restaurer les textures et les UV d’origine",
+        "restoration_was_cancelled": "La restauration a été annulée. ",
+        "original_textures_and_uvs_restored": "Les textures et les UV d’origine ont été restaurés.",
+        "share_uvs_keep_texture": "Partager les UV sans modifier la texture",
+        "restore_original_textures_uvs": "Restaurer les textures et UV d’origine",
+        "restore_original_uvs": "Restaurer les UV d’origine",
+        "create_inverted_cubes": "Créer des cubes inversés",
+        "advanced": "Avancé",
+        "visibility": "Visibilité",
+        "modeler_toolkit_settings": "Paramètres de Modeler Toolkit",
+        "toggle_layers": "Afficher / masquer les calques",
+        "show_only_layers": "Afficher uniquement les calques",
+        "modeler_toolkit": "Modeler Toolkit",
+        "available_tools": "Outils disponibles",
+        "gif_render_the_invisible_wall_or_floor_only_receives_the_shadow": "L’ombre peut être projetée sur une surface invisible ou un sol de rendu visible. Le sol est temporaire et n’est jamais ajouté au modèle.",
+        "the_installed_font_list_is_unavailable_reopen_settings_after_all": "La liste des polices installées est indisponible. Autorisez l’accès aux polices locales, puis rouvrez les paramètres.",
+        "preview": "Aperçu",
+        "reset_to_defaults": "Rétablir les valeurs par défaut",
+        "preview_gif_render": "Aperçu du rendu GIF",
+        "back_to_settings": "Retour aux paramètres",
+        "modeler_toolkit_watermark": "Filigrane de Modeler Toolkit",
+        "unnamed_animation": "Animation sans nom",
+        "animation_to_record": "Animation à enregistrer",
+        "record_this_animation_from_any_editor_mode": "Enregistrer cette animation depuis n’importe quel mode de l’éditeur.",
+        "shadow_light_direction": "Direction de la lumière de l’ombre",
+        "choose_where_the_light_comes_from_for_this_export_the_shadow_pro": "Choisissez la provenance de la lumière pour cet export. L’ombre est projetée dans la direction opposée.",
+        "negative_light_from_the_left_positive_light_from_the_right": "Valeur négative : lumière depuis la gauche. Valeur positive : lumière depuis la droite.",
+        "light_vertical_depth": "Direction verticale / Profondeur de la lumière (%)",
+        "negative_light_from_below_positive_light_from_above_on_a_floor_t": "Valeur négative : lumière depuis le bas. Valeur positive : lumière depuis le haut. Sur un sol, ce réglage ajuste la profondeur.",
+        "modeler_toolkit_capture_stopped": "L’enregistrement Modeler Toolkit s’est arrêté : ",
+        "open_a_model_and_finish_the_current_recording_before_previewing": "Ouvrez un modèle et terminez l’enregistrement en cours avant de lancer l’aperçu.",
+        "rebuild_textures_and_uvs_create_outlines_and_record_animations_w": "Reconstruire les textures et les UV, créer des contours et enregistrer des animations avec des ombres et un filigrane personnalisables.",
+        "uv_tools_outlines_layer_controls_dynamic_shadows": "Outils UV, contours, calques, ombres dynamiques et filigrane. Voir le dépôt pour le mode d’emploi et la licence MIT.",
+        "dynamic_shadow_clean_render": "Ombre dynamique / Rendu propre",
+        "use_modeler_toolkit_render_settings_for_this_export": "Utiliser les réglages de rendu de Modeler Toolkit pour cet export.",
+        "watermark": "Filigrane",
+        "add_your_configured_text_to_every_frame_independently_of_dynamic": "Ajouter le texte configuré à chaque image, indépendamment de l’option « Ombre dynamique / Rendu propre ».",
+        "watermark_settings": "Paramètres du filigrane",
+        "finish_or_cancel_the_current_gif_recording_first": "Terminez ou annulez d’abord l’enregistrement GIF en cours.",
+        "choose_an_animation_available_in_this_project_before_recording": "Choisissez une animation disponible dans ce projet avant de lancer l’enregistrement.",
+        "confirm": "Valider",
+        "cancel": "Annuler",
+        "technical_error": "Une erreur technique est survenue. Les détails sont disponibles dans la console de Blockbench."
     };
-    Object.keys(messages).forEach(key => delete Language.data[plugin_id + '.' + key]);
-    ['en', 'fr'].forEach(language => Language.addTranslations(language, Object.fromEntries(Object.entries(messages).map(([key, value]) => [plugin_id + '.' + key, value[language]]))));
 
     function translate(key) {
-        return tl(plugin_id + '.' + key);
+        return messages[key];
+    }
+
+    function error_message(error) {
+        if (Object.values(messages).includes(error?.message)) return error.message;
+        console.error('[Modeler Toolkit]', error);
+        return translate('technical_error');
     }
     const installed_font_options = {Arial: 'Arial'};
     const setting_definitions = {
@@ -754,6 +221,17 @@
         resolution: {name: translate('shadow_map_resolution'), type: 'select', value: '2048', options: {'512': '512', '1024': '1024', '2048': '2048', '4096': '4096'}},
         clean_uv: {name: translate('clean_texture_edges'), type: 'toggle', value: false, description: translate('temporarily_inset_uvs_during_rendering_model_uvs_and_undo_histor')},
         uv_margin: {name: translate('texture_edge_margin'), type: 'number', value: 0.032, min: 0, max: 0.25, step: 0.001, description: translate('inset_in_texture_uv_units_zero_disables_temporary_cleanup')},
+        floor_enabled: {name: translate('capture_floor'), type: 'toggle', value: false, description: translate('capture_floor_description')},
+        floor_style: {name: translate('floor_style'), type: 'select', value: 'tiles', options: {tiles: translate('floor_tiles'), solid: translate('floor_solid')}},
+        floor_width: {name: translate('floor_width'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
+        floor_depth: {name: translate('floor_depth'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
+        floor_tile_size: {name: translate('floor_tile_size'), type: 'number', value: 1, min: 0.25, max: 8, step: 0.25},
+        floor_color: {name: translate('floor_color'), type: 'click', value: '#777c86', icon: 'palette', click: open_settings},
+        floor_seam_color: {name: translate('floor_seam_color'), type: 'click', value: '#555a63', icon: 'palette', click: open_settings},
+        floor_thickness: {name: translate('floor_thickness'), type: 'number', value: 1, min: 0, max: 16, step: 0.5},
+        floor_height: {name: translate('floor_height'), type: 'number', value: 0, min: -256, max: 256, step: 1, description: translate('floor_height_description')},
+        floor_offset_x: {name: translate('floor_offset_x'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
+        floor_offset_z: {name: translate('floor_offset_z'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
         watermark_text: {name: translate('watermark_text'), type: 'text', value: '', description: translate('a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia')},
         watermark_position: {name: translate('watermark_position'), type: 'select', value: 'bottom_center', options: {bottom_center: translate('bottom_center'), bottom_left: translate('bottom_left'), bottom_right: translate('bottom_right'), center_left: translate('center_left'), center: translate('center'), center_right: translate('center_right'), top_left: translate('top_left'), top_center: translate('top_center'), top_right: translate('top_right')}},
         watermark_color: {name: translate('watermark_color'), type: 'click', value: '#ffffff', icon: 'palette', click: open_watermark_settings},
@@ -765,11 +243,10 @@
         atlas_power: {name: translate('power_of_two_texture_atlas'), type: 'toggle', value: false, description: translate('use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of')},
         inverted: {name: translate('enable_inverted_cubes'), type: 'toggle', value: true, description: translate('create_inward_facing_copies_named_name_inverted')},
         outline: {name: translate('enable_outlines'), type: 'toggle', value: true, description: translate('create_outline_shells_named_name_outline')},
-        java_selector: {name: translate('enable_java_version_selector'), type: 'toggle', value: true, description: translate('choose_a_supported_java_model_version_when_converting_a_project')},
         layers: {name: translate('enable_layer_controls'), type: 'toggle', value: true, description: translate('toggle_or_isolate_elements_and_groups_containing_layer')}
     };
     const plugin_settings = {};
-    const module_keys = new Set(['uv_cleanup', 'atlas', 'atlas_power', 'inverted', 'outline', 'java_selector', 'layers']);
+    const module_keys = new Set(['uv_cleanup', 'atlas', 'atlas_power', 'inverted', 'outline', 'layers']);
     const export_field = 'dynamic_render_enabled';
     const animation_field = 'modeler_toolkit_animation';
     const watermark_field = 'modeler_toolkit_watermark';
@@ -780,8 +257,12 @@
     const light_presets = {settings: {name: translate('plugin_settings')}, top_left: {name: translate('top_left'), x: -60, y: 80}, top: {name: translate('top'), x: 0, y: 100}, top_right: {name: translate('top_right'), x: 60, y: 80}, left: {name: translate('left'), x: -100, y: 0}, front: {name: translate('front'), x: 0, y: 0}, right: {name: translate('right'), x: 100, y: 0}, bottom_left: {name: translate('bottom_left'), x: -60, y: -80}, bottom: {name: translate('bottom'), x: 0, y: -100}, bottom_right: {name: translate('bottom_right'), x: 60, y: -80}, custom: {name: translate('custom_direction')}};
     const previous_light_fields = new Map();
     const installed_light_fields = new Map();
+    const previous_floor_fields = new Map();
+    const installed_floor_fields = new Map();
+    const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
     const animation_choices = new WeakMap();
     let active_session = null;
+    let pending_preview = null;
     let settings_dialog = null;
     let preview_dialog = null;
     let preview_action = null;
@@ -858,7 +339,7 @@
             const previous_fonts = localStorage.getItem('raven_tools_font_families');
             if (previous_fonts !== null) localStorage.setItem('modeler_toolkit_font_families', previous_fonts);
         }
-        ['atlas_padding', 'watermark_enabled', 'watermark_line_1', 'watermark_line_2', 'watermark_line_3', 'watermark_opacity', 'watermark_bold', 'watermark_outline', 'watermark_outline_color'].forEach(key => delete Settings.stored[plugin_id + '_' + key]);
+        ['java_selector', 'atlas_padding', 'watermark_enabled', 'watermark_line_1', 'watermark_line_2', 'watermark_line_3', 'watermark_opacity', 'watermark_bold', 'watermark_outline', 'watermark_outline_color'].forEach(key => delete Settings.stored[plugin_id + '_' + key]);
     }
 
     async function refresh_installed_fonts() {
@@ -938,6 +419,7 @@
 
     function show_tool_dialog(options) {
         const dialog = new Dialog({
+            buttons: [translate('confirm'), translate('cancel')],
             ...options,
             onConfirm(form_data) {
                 if (options.onConfirm.call(this, form_data) === false) return false;
@@ -1228,43 +710,6 @@
         });
     }
 
-    function open_java_conversion() {
-        const source_project = Project;
-        const formats = Object.fromEntries(Object.entries(Formats).filter(([id, format]) => id !== Format.id && format.can_convert_to).map(([id, format]) => [id, format.name]));
-        const versions = {...ModelProject.properties.java_block_version.options};
-        const default_version = ModelProject.properties.java_block_version.getDefault(Project) || Object.keys(versions).slice(-1)[0];
-        show_tool_dialog({
-            id: 'modeler_toolkit_convert_project',
-            title: translate('convert_project'),
-            width: 540,
-            form: {
-                information: {type: 'info', text: translate('conversion_may_remove_features_unsupported_by_the_target_format')},
-                current: {type: 'info', label: translate('current_format'), text: Format.name || Format.id},
-                format: {label: 'Format', type: 'select', options: formats, value: formats.java_block ? 'java_block' : Object.keys(formats)[0]},
-                java_block_version: {label: translate('java_model_version'), type: 'select', options: versions, value: default_version, condition: form => form.format === 'java_block'},
-                create_copy: {label: translate('create_copy'), type: 'checkbox', value: true}
-            },
-            onConfirm(form_data) {
-                if (Project !== source_project) return;
-                const target = Formats[form_data.format];
-                if (!target || target === Format) return;
-                if (form_data.create_copy) {
-                    const selected_texture = Texture.selected?.uuid;
-                    const model = Codecs.project.compile({raw: true});
-                    const original_format = Format;
-                    setupProject(original_format);
-                    Codecs.project.parse(model, '');
-                    if (Project.name) Project.name += '_converted';
-                    Texture.all.find(texture => texture.uuid === selected_texture)?.select();
-                }
-                target.convertTo();
-                if (form_data.format === 'java_block' && versions[form_data.java_block_version]) Project.java_block_version = form_data.java_block_version;
-                Project.saved = false;
-                updateInterface();
-            }
-        });
-    }
-
     function is_layer(node) {
         for (let current = node; current && typeof current === 'object'; current = current.parent) {
             if (current.name?.toLowerCase().includes('_layer')) return true;
@@ -1359,7 +804,7 @@
     }
 
     function atlas_message(message, error = false) {
-        Blockbench.showMessageBox({title: translate('modeler_toolkit_texture_optimization'), message, icon: error ? 'error' : 'info'});
+        Blockbench.showMessageBox({title: translate('modeler_toolkit_texture_optimization'), message, icon: error ? 'error' : 'info', buttons: [translate('close')]});
         return {changed: false, message};
     }
 
@@ -1692,7 +1137,7 @@
         try {
             plan = plan_model_uvs();
         } catch (error) {
-            return atlas_message(translate('no_changes_were_made') + error.message, true);
+            return atlas_message(translate('no_changes_were_made') + error_message(error), true);
         }
         const changes = plan.entries.filter(entry => entry.region.target !== entry.region);
         const skipped_text = [...plan.skipped].map(([reason, count]) => reason + ': ' + count).join('\n');
@@ -1721,7 +1166,7 @@
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
-            return atlas_message(translate('uv_optimization_was_cancelled') + error.message, true);
+            return atlas_message(translate('uv_optimization_was_cancelled') + error_message(error), true);
         }
         const result = {changed: true, mode: 'uv_only', faces: changes.length, regions_before: new Set(plan.entries.map(entry => entry.region.key)).size, regions_after: new Set(plan.entries.map(entry => entry.region.target.key)).size, textures_unchanged: true};
         atlas_message(result.faces + translate('face_s_now_share_pixel_identical_uv_regions_including_rotated_or') + result.regions_before + ' → ' + result.regions_after + translate('original_pixels_dimensions_padding_and_texture_assignments_are_u') + (skipped_text ? '\n\n' + skipped_text : ''));
@@ -1779,7 +1224,7 @@
                 else skipped.push(texture.name + translate('no_compatible_square_layout_found_with_the_same_pixels_and_borde'));
             }
         } catch (error) {
-            return atlas_message(translate('no_changes_were_made') + error.message, true);
+            return atlas_message(translate('no_changes_were_made') + error_message(error), true);
         }
         if (!plans.length) return atlas_message(translate('no_compatible_square_texture_could_be_rebuilt_without_enlargemen') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         const change_project_size = !Format.per_texture_uv_size && Texture.all.length === 1 && plans.length === 1;
@@ -1825,14 +1270,14 @@
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
-            return atlas_message(translate('texture_repacking_was_cancelled') + error.message, true);
+            return atlas_message(translate('texture_repacking_was_cancelled') + error_message(error), true);
         }
         const original_pixels = plans.reduce((area, plan) => area + plan.source.width * plan.source.height, 0);
         const atlas_pixels = plans.reduce((area, plan) => area + plan.size * plan.size, 0);
         const regions_before = plans.reduce((count, plan) => count + new Set(plan.entries.map(entry => entry.region)).size, 0);
         const regions_after = plans.reduce((count, plan) => count + plan.placements.size, 0);
         const result = {changed: true, mode: 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
-        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString(Language.code === 'fr' ? 'fr-FR' : 'en-US', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate('dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
+        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate('dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
         atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
@@ -1865,15 +1310,10 @@
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
-            return atlas_message(translate('texture_restoration_was_cancelled') + error.message, true);
+            return atlas_message(translate('texture_restoration_was_cancelled') + error_message(error), true);
         }
         Blockbench.showQuickMessage(translate('original_textures_uvs_and_resolution_restored'), 4000);
         return {changed: true, textures: textures.length, elements: elements.length};
-    }
-
-    function rebuild_texture_atlas() {
-        if (!Project) return;
-        return BarItems.create_texture.trigger();
     }
 
     function restore_optimized_uvs(backup) {
@@ -1892,7 +1332,7 @@
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
-            return atlas_message(translate('uv_restoration_was_cancelled') + error.message, true);
+            return atlas_message(translate('uv_restoration_was_cancelled') + error_message(error), true);
         }
         Blockbench.showQuickMessage(translate('original_uvs_restored_texture_images_preserved'), 4000);
         return {changed: true, elements: elements.length, textures_unchanged: true};
@@ -1952,7 +1392,7 @@
             aspects.textures = [...atlases, ...restored];
             Undo.cancelEdit(true);
             refresh_atlas_view();
-            return atlas_message(translate('restoration_was_cancelled') + error.message, true);
+            return atlas_message(translate('restoration_was_cancelled') + error_message(error), true);
         }
         Blockbench.showQuickMessage(translate('original_textures_and_uvs_restored'), 4000);
         return {changed: true, elements: elements.length, textures: restored.length};
@@ -1967,23 +1407,29 @@
         const definitions = [
             ['modeler_toolkit_optimize_atlas', {name: translate('optimize_texture_and_uvs'), icon: 'texture', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: optimize_texture_atlas}],
             ['modeler_toolkit_share_uv', {name: translate('share_uvs_keep_texture'), icon: 'content_copy', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: share_model_uvs}],
-            ['modeler_toolkit_rebuild_texture', {name: translate('create_texture_blockbench'), icon: 'grid_on', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: rebuild_texture_atlas}],
             ['modeler_toolkit_restore_atlas', {name: translate('restore_original_textures_uvs'), icon: 'restore', condition: () => module_enabled('atlas') && !!Project && [1, 2, 3].includes(Project[atlas_backup_key]?.version), click: restore_texture_atlas}],
             ['modeler_toolkit_export_backups', {name: translate('export_texture_backups'), icon: 'save_alt', condition: () => module_enabled('atlas') && !!Project && !!Project[atlas_backup_key]?.version, click: export_atlas_backups}],
             ['modeler_toolkit_uv_cleanup', {name: translate('clean_uv_edges'), icon: 'healing', condition: () => module_enabled('uv_cleanup') && !!Project && selected_elements().length > 0, click: open_uv_cleanup}],
-            ['modeler_toolkit_restore_uv', {name: translate('restore_original_uvs'), icon: 'settings_backup_restore', condition: () => module_enabled('uv_cleanup') && !!Project && selected_elements().length > 0, click: restore_model_uv}],
+            ['modeler_toolkit_restore_uv', {name: translate('restore_original_uvs'), icon: 'settings_backup_restore', condition: () => module_enabled('uv_cleanup') && !!Project && selected_elements().some(backup_matches), click: restore_model_uv}],
             ['modeler_toolkit_inverted', {name: translate('create_inverted_cubes'), icon: 'flip_to_back', condition: () => module_enabled('inverted') && !!Project && selected_elements().some(element => element instanceof Cube), click: create_inverted_cubes}],
             ['modeler_toolkit_outline', {name: translate('create_outlines'), icon: 'crop_square', condition: () => module_enabled('outline') && !!Project && selected_elements().length > 0, click: open_outline}],
-            ['modeler_toolkit_convert', {name: translate('convert_project_java_version'), icon: 'swap_horiz', condition: () => module_enabled('java_selector') && !!Project, click: open_java_conversion}],
             ['modeler_toolkit_settings', {name: translate('modeler_toolkit_settings'), icon: 'settings', click: open_settings}],
             ['modeler_toolkit_toggle_layers', {name: translate('toggle_layers'), icon: 'visibility_off', condition: () => module_enabled('layers') && !!Project && Outliner.elements.length > 0, click: () => toggle_layer_visibility('hide')}],
             ['modeler_toolkit_show_only_layers', {name: translate('show_only_layers'), icon: 'layers', condition: () => module_enabled('layers') && !!Project && Outliner.elements.length > 0, click: () => toggle_layer_visibility('isolate')}]
         ];
         definitions.forEach(([id, options]) => tool_actions.push(new Action(id, {...options, category: 'edit'})));
-        ['modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'].forEach(id => {
+        const advanced_actions = ['modeler_toolkit_share_uv', 'modeler_toolkit_inverted'];
+        const layer_actions = ['modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'];
+        layer_actions.forEach(id => {
             if (Toolbars.outliner && !Toolbars.outliner.children.some(child => (typeof child === 'string' ? child : child.id) === id)) Toolbars.outliner.add(id);
         });
-        tools_menu = new BarMenu('modeler_toolkit', ['modeler_toolkit_optimize_atlas', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_export_backups', 'modeler_toolkit_share_uv', 'modeler_toolkit_rebuild_texture', '_', 'modeler_toolkit_uv_cleanup', 'modeler_toolkit_restore_uv', '_', 'modeler_toolkit_inverted', 'modeler_toolkit_outline', '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings', '_', 'modeler_toolkit_convert', '_', 'modeler_toolkit_toggle_layers', 'modeler_toolkit_show_only_layers'], {name: translate('modeler_toolkit'), icon: 'handyman'});
+        tools_menu = new BarMenu('modeler_toolkit', [
+            'modeler_toolkit_optimize_atlas', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_export_backups', '_',
+            'modeler_toolkit_uv_cleanup', 'modeler_toolkit_restore_uv', 'modeler_toolkit_outline',
+            {id: 'modeler_toolkit_advanced', name: translate('advanced'), icon: 'tune', children: advanced_actions, condition: () => advanced_actions.some(id => BarItems[id] && Condition(BarItems[id].condition))},
+            {id: 'modeler_toolkit_visibility', name: translate('visibility'), icon: 'visibility', children: layer_actions, condition: () => layer_actions.some(id => BarItems[id] && Condition(BarItems[id].condition))},
+            '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings'
+        ], {name: translate('modeler_toolkit'), icon: 'handyman'});
         MenuBar.addMenu(tools_menu, 'tools');
         Blockbench.on('select_project', refresh_layer_icons);
         Blockbench.on('close_project', close_layer_project);
@@ -2062,7 +1508,8 @@
                 options: key === 'watermark_font' ? watermark_font_options : definition.options,
                 min: definition.min,
                 max: definition.max,
-                step: definition.step
+                step: definition.step,
+                condition: key.startsWith('floor_') && key !== 'floor_enabled' ? values => floor_field_visible(key, values) : undefined
             };
         });
         form.actions = {
@@ -2072,17 +1519,14 @@
                 if (index === 0) {
                     const return_dialog = settings_dialog;
                     const options = read_values(return_dialog.getFormResult());
+                    return_dialog.hide();
                     const data_url = await render_preview(options);
                     if (data_url && settings_dialog === return_dialog) {
-                        const preview_image = document.createElement('img');
-                        preview_image.src = data_url;
-                        preview_image.width = 512;
-                        preview_image.height = 512;
-                        preview_image.className = 'checkerboard';
+                        const preview_image = await create_preview_image(data_url);
                         preview_dialog = new Dialog({
                             id: 'modeler_toolkit_preview',
                             title: translate('preview_gif_render'),
-                            width: 552,
+                            width: preview_image.width + 40,
                             lines: [preview_image],
                             buttons: [translate('back_to_settings')],
                             onButton() {
@@ -2093,7 +1537,7 @@
                                 });
                             }
                         }).show();
-                    }
+                    } else if (settings_dialog === return_dialog) return_dialog.show();
                 } else {
                     settings_dialog.setFormValues(Object.fromEntries(Object.entries(setting_definitions).map(([key, definition]) => [key, definition.value])));
                 }
@@ -2104,6 +1548,7 @@
             title: section === 'watermark' ? translate('modeler_toolkit_watermark') : translate('modeler_toolkit_settings'),
             width: 600,
             form,
+            buttons: [translate('confirm'), translate('cancel')],
             onConfirm(form_data) {
                 const next_values = read_values(form_data);
                 Object.keys(form_data).filter(key => plugin_settings[key]).forEach(key => plugin_settings[key].set(next_values[key]));
@@ -2122,7 +1567,7 @@
         const form = Screencam.gif_options_dialog.form;
         if (!form?.buildForm) return null;
         return {
-            values: form.getResult(),
+            values: Object.fromEntries(Object.entries(form.getResult()).map(([key, value]) => [key, value?.toHex8String ? value.toHex8String() : value])),
             toggles: Object.fromEntries(Object.entries(form.form_data).filter(([, field]) => field.input_toggle).map(([key, field]) => [key, field.input_toggle.checked]))
         };
     }
@@ -2165,7 +1610,7 @@
 
     function setup_light_fields() {
         const values = read_values();
-        const visible = form => !!form[export_field] && !!plugin_settings.shadow_enabled.value;
+        const visible = form => (!!form[export_field] || !!form[plugin_id + '_floor_enabled']) && !!plugin_settings.shadow_enabled.value;
         const custom = form => visible(form) && form[light_field] === 'custom';
         const definitions = {
             [light_field]: {label: translate('shadow_light_direction'), type: 'select', value: 'settings', options: Object.fromEntries(Object.entries(light_presets).map(([key, preset]) => [key, preset.name])), condition: visible, description: translate('choose_where_the_light_comes_from_for_this_export_the_shadow_pro')},
@@ -2187,6 +1632,82 @@
             return {light_x: Number.isFinite(x) ? Math.min(200, Math.max(-200, x)) : values.light_x, light_y: Number.isFinite(y) ? Math.min(200, Math.max(-200, y)) : values.light_y};
         }
         return {light_x: preset.x ?? values.light_x, light_y: preset.y ?? values.light_y};
+    }
+
+    function floor_field_visible(key, values) {
+        if (!values.floor_enabled) return false;
+        return !['floor_tile_size', 'floor_seam_color'].includes(key) || values.floor_style === 'tiles';
+    }
+
+    function capture_render_values(options) {
+        const overrides = Object.fromEntries(floor_keys.map(key => [key, options[plugin_id + '_' + key]]));
+        const values = read_values(overrides);
+        const render_enabled = options[export_field] ?? values.enabled;
+        return {...values, ...capture_light_values(options, values), shadow_enabled: (render_enabled || values.floor_enabled) && values.shadow_enabled, clean_uv: render_enabled && values.clean_uv, watermark_enabled: options[watermark_field] ?? false};
+    }
+
+    function setup_floor_fields() {
+        const values = read_values();
+        const definitions = {};
+        floor_keys.forEach(key => {
+            const definition = setting_definitions[key];
+            definitions[plugin_id + '_' + key] = {
+                label: definition.name,
+                description: definition.description,
+                type: definition.type === 'toggle' ? 'checkbox' : definition.type === 'click' ? 'color' : definition.type,
+                value: values[key],
+                min: definition.min,
+                max: definition.max,
+                step: definition.step,
+                options: definition.options,
+                condition: key === 'floor_enabled' ? undefined : form => floor_field_visible(key, {floor_enabled: form[plugin_id + '_floor_enabled'], floor_style: form[plugin_id + '_floor_style']})
+            };
+        });
+        definitions[plugin_id + '_capture_preview'] = {
+            type: 'buttons',
+            buttons: [translate('preview_gif_render')],
+            async click() {
+                if (active_session || pending_preview || document.getElementById('gif_recording_frame')) {
+                    Blockbench.showQuickMessage(translate('finish_or_cancel_the_current_gif_recording_first'), 3000);
+                    return;
+                }
+                const recording_dialog = Screencam.gif_options_dialog;
+                const form_state = capture_form();
+                const project = Project;
+                const return_to_recording = () => {
+                    if (!plugin_loaded || Project !== project) return;
+                    recording_dialog.show();
+                    if (form_state) {
+                        recording_dialog.setFormValues(form_state.values);
+                        recording_dialog.form.setToggles(form_state.toggles);
+                    }
+                };
+                const data_url = await render_recording_preview(recording_dialog.getFormResult());
+                if (!data_url) {
+                    return_to_recording();
+                    return;
+                }
+                if (preview_dialog) preview_dialog.hide().delete();
+                const preview_image = await create_preview_image(data_url);
+                preview_dialog = new Dialog({
+                    id: 'modeler_toolkit_capture_preview',
+                    title: translate('preview_gif_render'),
+                    width: preview_image.width + 40,
+                    lines: [preview_image],
+                    buttons: [translate('back_to_recording')],
+                    onButton() {
+                        this.hide().delete();
+                        preview_dialog = null;
+                        queueMicrotask(return_to_recording);
+                    }
+                }).show();
+            }
+        };
+        Object.entries(definitions).forEach(([key, field]) => {
+            previous_floor_fields.set(key, Screencam.gif_options_dialog.form_config[key]);
+            installed_floor_fields.set(key, field);
+            Screencam.gif_options_dialog.form_config[key] = field;
+        });
     }
 
     function update_animation_fields(dialog) {
@@ -2422,8 +1943,59 @@
         }
     }
 
+    function create_floor(session) {
+        const options = session.options;
+        const width = options.floor_width * 16;
+        const depth = options.floor_depth * 16;
+        session.floor = new THREE.Group();
+        session.floor.name = 'modeler_toolkit_floor';
+        const material = new THREE.MeshBasicMaterial({color: options.floor_color, toneMapped: false});
+        if (options.floor_style === 'tiles') {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 128;
+            const context = canvas.getContext('2d');
+            context.fillStyle = options.floor_color;
+            context.fillRect(0, 0, 128, 128);
+            context.fillStyle = options.floor_seam_color;
+            context.fillRect(0, 0, 128, 2);
+            context.fillRect(0, 0, 2, 128);
+            session.floor_texture = new THREE.CanvasTexture(canvas);
+            session.floor_texture.wrapS = session.floor_texture.wrapT = THREE.RepeatWrapping;
+            session.floor_texture.repeat.set(options.floor_width / options.floor_tile_size, options.floor_depth / options.floor_tile_size);
+            session.floor_texture.magFilter = THREE.NearestFilter;
+            material.map = session.floor_texture;
+            material.color.set(0xffffff);
+        }
+        const top = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
+        top.rotation.x = -Math.PI / 2;
+        session.floor.add(top);
+        if (options.floor_thickness > 0) {
+            const side_material = new THREE.MeshBasicMaterial({color: new THREE.Color(options.floor_color).multiplyScalar(0.72), toneMapped: false});
+            const edge_geometry = new THREE.BoxGeometry(width, options.floor_thickness, depth);
+            edge_geometry.setIndex(Array.from(edge_geometry.index.array).filter((value, index) => index < 12 || index >= 18));
+            edge_geometry.clearGroups();
+            const edge = new THREE.Mesh(edge_geometry, side_material);
+            edge.position.y = -options.floor_thickness / 2;
+            session.floor.add(edge);
+        }
+    }
+
+    function position_floor(session, camera, bounds) {
+        if (!session.anchor) session.anchor = bounds.clone();
+        const options = session.options;
+        const center = session.anchor.getCenter(new THREE.Vector3());
+        session.floor.position.set(center.x + options.floor_offset_x, session.anchor.min.y + options.floor_height - 0.01, center.z + options.floor_offset_z);
+        if (!session.floor_right) {
+            session.floor_right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            session.floor_right.y = 0;
+            if (session.floor_right.lengthSq() < 0.0001) session.floor_right.set(1, 0, 0);
+            session.floor_right.normalize();
+        }
+    }
+
     function create_session(options, project = Project) {
         const session = {options, project, depth_materials: new Map(), frame: null, observer: null, disposed: false, anchor: null};
+        if (options.floor_enabled) create_floor(session);
         if (options.shadow_enabled) {
             session.receiver = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({color: options.color, opacity: options.opacity / 100, depthWrite: false, side: THREE.DoubleSide}));
             session.receiver.name = 'modeler_toolkit_receiver';
@@ -2443,8 +2015,8 @@
         if (!session.anchor) session.anchor = bounds.clone();
         const center = session.anchor.getCenter(new THREE.Vector3());
         const radius = Math.max(session.anchor.getSize(new THREE.Vector3()).length() / 2, 0.5);
-        const normal = session.options.surface === 'floor' ? new THREE.Vector3(0, 1, 0) : camera.getWorldDirection(new THREE.Vector3()).negate();
-        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const normal = session.floor || session.options.surface === 'floor' ? new THREE.Vector3(0, 1, 0) : camera.getWorldDirection(new THREE.Vector3()).negate();
+        const right = session.floor_right?.clone() || new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
         right.addScaledVector(normal, -right.dot(normal));
         if (right.lengthSq() < 0.0001) right.set(1, 0, 0);
         right.normalize();
@@ -2461,6 +2033,11 @@
         session.receiver.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
         const extent = Math.max(radius * 4, bounds.getSize(new THREE.Vector3()).length() * 2, bounds.getCenter(new THREE.Vector3()).distanceTo(center) * 2);
         session.receiver.scale.set(extent * 4, extent * 4, 1);
+        if (session.floor) {
+            session.receiver.position.copy(session.floor.position).addScaledVector(normal, 0.002);
+            session.receiver.rotation.set(-Math.PI / 2, 0, 0);
+            session.receiver.scale.set(session.options.floor_width * 16, session.options.floor_depth * 16, 1);
+        }
         const direction = normal.clone().addScaledVector(right, session.options.light_x / 100).addScaledVector(up, session.options.light_y / 100).normalize();
         const shadow_camera = session.light.shadow.camera;
         const camera_up = Math.abs(direction.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
@@ -2486,7 +2063,17 @@
         const center_x = Math.round((coverage.min.x + coverage.max.x) / 2 / texel_x) * texel_x;
         const center_y = Math.round((coverage.min.y + coverage.max.y) / 2 / texel_y) * texel_y;
         const distance = Math.max(radius * 4, coverage.max.z + radius * 4);
-        const receiver_depth = radius * (2 + session.options.gap / 100) / Math.max(direction.dot(normal), 0.1) + radius;
+        let receiver_depth = radius * (2 + session.options.gap / 100) / Math.max(direction.dot(normal), 0.1) + radius;
+        if (session.floor) {
+            let nearest_receiver = Infinity;
+            for (const x of [-0.5, 0.5]) {
+                for (const y of [-0.5, 0.5]) {
+                    const point = new THREE.Vector3(x * session.receiver.scale.x, y * session.receiver.scale.y, 0).applyQuaternion(session.receiver.quaternion).add(session.receiver.position).sub(center);
+                    nearest_receiver = Math.min(nearest_receiver, point.dot(direction));
+                }
+            }
+            receiver_depth = Math.max(receiver_depth, coverage.min.z - nearest_receiver + padding);
+        }
         session.light.position.copy(center).addScaledVector(direction, distance);
         session.light.target.position.copy(center);
         shadow_camera.up.copy(camera_up);
@@ -2525,6 +2112,10 @@
         const original_buffer_render = renderer.renderBufferDirect;
         let buffer_wrapper;
         try {
+            if (session.floor) {
+                position_floor(session, camera, bounds);
+                render_scene.add(session.floor);
+            }
             if (session.options.clean_uv && session.options.uv_margin > 0) {
                 elements.forEach(element => {
                     const attribute = element.mesh.geometry.attributes.uv;
@@ -2557,6 +2148,7 @@
             }
             return render();
         } finally {
+            if (session.floor) render_scene.remove(session.floor);
             if (session.light) {
                 render_scene.remove(session.receiver, session.light, session.light.target);
                 if (renderer.renderBufferDirect === buffer_wrapper) renderer.renderBufferDirect = original_buffer_render;
@@ -2574,6 +2166,10 @@
         if (!session || session.disposed) return;
         session.disposed = true;
         session.observer?.disconnect();
+        if (session.live_request) cancelAnimationFrame(session.live_request);
+        session.live_canvas?.remove();
+        if (session.live_buffer) session.live_buffer.width = session.live_buffer.height = 0;
+        session.live_background = null;
         if (session.watermark_canvas) {
             session.watermark_canvas.width = 0;
             session.watermark_canvas = null;
@@ -2582,7 +2178,16 @@
             if (session.had_frame_handler) session.gif_format.frameRendered = session.previous_frame_handler;
             else delete session.gif_format.frameRendered;
         }
+        if (session.gif_format && session.gif_format.process === session.process_wrapper) session.gif_format.process = session.previous_process;
         if (session.renderer && session.renderer.render === session.render_wrapper) session.renderer.render = session.original_render;
+        if (session.floor) {
+            session.floor.removeFromParent();
+            session.floor.traverse(node => {
+                node.geometry?.dispose();
+                node.material?.dispose();
+            });
+            session.floor_texture?.dispose();
+        }
         if (session.light) {
             session.receiver.removeFromParent();
             session.light.removeFromParent();
@@ -2596,6 +2201,10 @@
         session.depth_materials.clear();
         if (active_session === session) active_session = null;
         restore_capture_animation(session);
+        if (session.preview_request) {
+            session.preview_request.restore();
+            if (!session.preview_request.processing) session.preview_request.finish(null);
+        }
     }
 
     function abort_recording() {
@@ -2611,7 +2220,7 @@
     function capture_error(session, error) {
         queueMicrotask(() => {
             if (active_session === session) abort_recording();
-            Blockbench.showQuickMessage(translate('modeler_toolkit_capture_stopped') + error.message, 5000);
+            Blockbench.showQuickMessage(translate('modeler_toolkit_capture_stopped') + error_message(error), 5000);
         });
     }
 
@@ -2621,26 +2230,61 @@
             dispose_session(session);
             return;
         }
-        if (session.options.watermark_enabled && session.options.watermark_text) {
-            session.gif_format = ScreencamGIFFormats[options.format || 'gif'];
-            session.had_frame_handler = Object.hasOwnProperty.call(session.gif_format, 'frameRendered');
-            session.previous_frame_handler = session.gif_format.frameRendered;
-            session.frame_wrapper = function(vars, canvas) {
+        session.view = Preview.selected;
+        session.capture_options = options;
+        session.floor_right = null;
+        session.anchor = null;
+        session.live_canvas = document.createElement('canvas');
+        session.live_canvas.className = 'checkerboard';
+        session.live_canvas.dataset.modeler_toolkit_capture = 'true';
+        Object.assign(session.live_canvas.style, {position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none'});
+        session.frame.prepend(session.live_canvas);
+        session.start_capture = () => {
+            session.anchor = null;
+            session.floor_right = null;
+            session.shadow_bounds = null;
+        };
+        session.gif_format = ScreencamGIFFormats[options.format || 'gif'];
+        session.had_frame_handler = Object.hasOwnProperty.call(session.gif_format, 'frameRendered');
+        session.previous_frame_handler = session.gif_format.frameRendered;
+        session.frame_wrapper = function(vars, canvas) {
+            if (vars.frame !== session.frame) {
+                if (session.previous_frame_handler) return session.previous_frame_handler.apply(this, arguments);
+                vars.frame_canvases.push(canvas);
+                return;
+            }
+            try {
+                if (!session.disposed && Project === session.project) {
+                    draw_watermark(canvas, session.options, session);
+                    update_live_canvas(session, canvas);
+                }
+                if (session.previous_frame_handler) return session.previous_frame_handler.apply(this, arguments);
+                vars.frame_canvases.push(canvas);
+            } catch (error) {
+                capture_error(session, error);
+                throw error;
+            }
+        };
+        session.gif_format.frameRendered = session.frame_wrapper;
+        if (session.preview_request) {
+            session.previous_process = session.gif_format.process;
+            session.process_wrapper = async function(vars, capture_options) {
+                if (vars.frame !== session.frame) return session.previous_process.apply(this, arguments);
+                session.preview_request.processing = true;
                 try {
-                    if (!session.disposed && Project === session.project) draw_watermark(canvas, session.options, session);
-                    if (session.previous_frame_handler) return session.previous_frame_handler.apply(this, arguments);
-                    vars.frame_canvases.push(canvas);
+                    const process = options.format === 'png_sequence' ? ScreencamGIFFormats.apng.process : session.previous_process;
+                    return await process.call(this, vars, capture_options);
                 } catch (error) {
-                    capture_error(session, error);
-                    throw error;
+                    session.preview_request.finish(null);
+                    Blockbench.showQuickMessage(translate('modeler_toolkit_capture_stopped') + error_message(error), 5000);
                 }
             };
-            session.gif_format.frameRendered = session.frame_wrapper;
+            session.gif_format.process = session.process_wrapper;
         }
         session.renderer = Screencam.NoAAPreview.renderer;
         session.original_render = session.renderer.render;
         session.render_wrapper = function(render_scene, camera) {
-            if (render_scene !== Canvas.scene || !session.frame.classList.contains('recording')) return session.original_render.apply(this, arguments);
+            if (render_scene !== Canvas.scene || !session.rendering_live && !session.frame.classList.contains('recording')) return session.original_render.apply(this, arguments);
             try {
                 return render_frame(session, this, render_scene, camera, () => session.original_render.call(this, render_scene, camera));
             } catch (error) {
@@ -2651,63 +2295,197 @@
         session.renderer.render = session.render_wrapper;
         session.observer = new MutationObserver(() => {
             if (!session.frame.isConnected) dispose_session(session);
+            else if (session.frame.classList.contains('recording') && !session.recording_started) {
+                session.recording_started = true;
+                session.start_capture();
+            }
         });
         session.observer.observe(session.frame.parentNode, {childList: true});
+        session.observer.observe(session.frame, {attributes: true, attributeFilter: ['class']});
+        try {
+            update_live_canvas(session, render_capture_frame(session));
+        } catch (error) {
+            capture_error(session, error);
+        }
+        const update = time => {
+            if (session.disposed || !session.frame.isConnected) return;
+            if (!session.frame.classList.contains('recording') && (!session.last_live_time || time - session.last_live_time >= 100)) {
+                session.last_live_time = time;
+                try {
+                    update_live_canvas(session, render_capture_frame(session));
+                } catch (error) {
+                    capture_error(session, error);
+                    return;
+                }
+            }
+            session.live_request = requestAnimationFrame(update);
+        };
+        session.live_request = requestAnimationFrame(update);
     }
 
-    async function render_preview(options = read_values()) {
-        if (!Project || active_session || document.getElementById('gif_recording_frame')) {
+    function update_live_canvas(session, canvas) {
+        const target = session.live_canvas;
+        if (!target || session.disposed) return;
+        if (target.width !== canvas.width || target.height !== canvas.height) {
+            target.width = canvas.width;
+            target.height = canvas.height;
+        }
+        const context = target.getContext('2d');
+        context.clearRect(0, 0, target.width, target.height);
+        context.drawImage(canvas, 0, 0);
+    }
+
+    function render_capture_frame(session) {
+        session.start_capture();
+        const options = session.capture_options;
+        const view = session.view;
+        const preview = Screencam.NoAAPreview;
+        const crop = Screencam.gif_crop;
+        const ratio = window.devicePixelRatio;
+        const width = Math.round(Math.min(4000, Math.max(24, (view.width - crop.left - crop.right) * ratio)));
+        const height = Math.round(Math.min(4000, Math.max(24, (view.height - crop.top - crop.bottom) * ratio)));
+        const custom = options.resolution && (options.resolution[0] > view.width || options.resolution[1] > view.height) && Math.abs(width - options.resolution[0]) < 1 && Math.abs(height - options.resolution[1]) < 1;
+        const pixelate = options.pixelate || 1;
+        preview.resize(custom ? width / pixelate : view.width * ratio / pixelate, custom ? height / pixelate : view.height * ratio / pixelate);
+        preview.setProjectionMode(view.isOrtho);
+        preview.controls.unlinked = view.controls.unlinked;
+        preview.controls.target.copy(view.controls.target);
+        preview.camera.position.copy(view.camera.position);
+        preview.camera.quaternion.copy(view.camera.quaternion);
+        if (view.isOrtho) {
+            for (const key of ['zoom', 'top', 'bottom', 'right', 'left']) preview.camera[key] = view.camera[key];
+            preview.camera.updateProjectionMatrix();
+        } else if (options.zoom) {
+            preview.camera.setFocalLength(options.zoom);
+        } else {
+            preview.setFOV(view.camPers.fov);
+        }
+        const canvas = session.live_buffer || (session.live_buffer = document.createElement('canvas'));
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+        const context = canvas.getContext('2d');
+        let render_error;
+        const render = () => {
+            session.rendering_live = true;
+            try {
+                preview.render();
+                context.clearRect(0, 0, width, height);
+                context.imageSmoothingEnabled = false;
+                if (options.background) {
+                    context.fillStyle = options.background;
+                    context.fillRect(0, 0, width, height);
+                }
+                if (session.live_background) context.drawImage(session.live_background, 0, 0, width, height);
+                context.drawImage(preview.canvas, custom ? 0 : Math.round(-crop.left * ratio), custom ? 0 : Math.round(-crop.top * ratio), Math.round(preview.width * pixelate), Math.round(preview.height * pixelate));
+                draw_watermark(canvas, session.options, session);
+            } catch (error) {
+                render_error = error;
+            } finally {
+                session.rendering_live = false;
+                preview.controls.unlinked = false;
+            }
+        };
+        if (options.show_gizmos) render();
+        else Canvas.withoutGizmos(render);
+        if (render_error) throw render_error;
+        return canvas;
+    }
+
+    async function load_capture_background(source) {
+        if (!source || typeof source !== 'string') return null;
+        const image = new Image();
+        image.src = /^(data:|blob:|file:|https?:)/i.test(source) || !isApp ? source : require('url').pathToFileURL(source).href;
+        try {
+            await image.decode();
+            return image;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async function create_preview_image(data_url) {
+        const image = document.createElement('img');
+        image.src = data_url;
+        await image.decode();
+        const scale = Math.min(1, 640 / image.naturalWidth, (window.innerWidth - 100) / image.naturalWidth, (window.innerHeight - 180) / image.naturalHeight);
+        image.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        image.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        image.className = 'checkerboard';
+        return image;
+    }
+
+    async function render_recording_preview(form_data, render_values) {
+        if (!Project || active_session || pending_preview || document.getElementById('gif_recording_frame')) {
             Blockbench.showQuickMessage(translate('open_a_model_and_finish_the_current_recording_before_previewing'), 3000);
             return null;
         }
-        options = {...options, watermark_enabled: true};
+        const view = Preview.selected;
         const project = Project;
         const generation = lifecycle;
-        await prepare_watermark_font(options);
-        if (!plugin_loaded || generation !== lifecycle || Project !== project || active_session || document.getElementById('gif_recording_frame')) return null;
-        const preview = Screencam.NoAAPreview;
-        const session = create_session(options);
-        const renderer = preview.renderer;
-        const original_render = renderer.render;
-        let data_url;
-        let render_error;
-        const render_wrapper = function(render_scene, camera) {
-            if (render_scene !== Canvas.scene) return original_render.apply(this, arguments);
-            return render_frame(session, this, render_scene, camera, () => original_render.call(this, render_scene, camera));
+        const crop = {...Screencam.gif_crop};
+        const perspective = view.camPers.clone();
+        const orthogonal = view.camOrtho.clone();
+        const target = view.controls.target.clone();
+        const orthographic = view.isOrtho;
+        const controls = Object.fromEntries(['autoRotate', 'autoRotateSpeed', 'autoRotateProgress'].map(key => [key, view.controls[key]]));
+        let resolve_preview;
+        const completion = new Promise(resolve => resolve_preview = resolve);
+        const request = {
+            render_values,
+            processing: false,
+            restored: false,
+            finished: false,
+            restore() {
+                if (this.restored) return;
+                this.restored = true;
+                Object.assign(Screencam.gif_crop, crop);
+                if (Project !== project) return;
+                view.setProjectionMode(orthographic);
+                view.camPers.copy(perspective);
+                view.camOrtho.copy(orthogonal);
+                view.controls.target.copy(target);
+                Object.assign(view.controls, controls);
+                view.controls.update();
+            },
+            finish(data_url) {
+                if (this.finished) return;
+                this.finished = true;
+                this.restore();
+                if (pending_preview === this) pending_preview = null;
+                resolve_preview(plugin_loaded && generation === lifecycle && Project === project ? data_url : null);
+            }
         };
+        pending_preview = request;
+        const color = form_data.color && tinycolor(form_data.color);
+        const options = {...form_data, silent: true, background: color && color.getAlpha() > 0 ? color.toHexString() : undefined};
+        Screencam.gif_options_dialog.hide();
         try {
-            preview.copyView(Preview.selected);
-            preview.resize(640, 640);
-            renderer.render = render_wrapper;
-            Canvas.withoutGizmos(() => {
-                try {
-                    preview.render();
-                    const canvas = document.createElement('canvas');
-                    canvas.width = preview.canvas.width;
-                    canvas.height = preview.canvas.height;
-                    canvas.getContext('2d').drawImage(preview.canvas, 0, 0);
-                    draw_watermark(canvas, options, session);
-                    data_url = canvas.toDataURL('image/png');
-                } catch (error) {
-                    render_error = error;
-                }
-            });
-            if (render_error) throw render_error;
-            return data_url;
-        } finally {
-            if (renderer.render === render_wrapper) renderer.render = original_render;
-            dispose_session(session);
+            await wrapped_create_gif(options, data_url => request.finish(data_url), request);
+            if (active_session?.preview_request === request && active_session.frame?.isConnected) {
+                active_session.frame.querySelector('.gif_record_button')?.click();
+            } else request.finish(null);
+        } catch (error) {
+            request.finish(null);
+            Blockbench.showQuickMessage(translate('modeler_toolkit_capture_stopped') + error_message(error), 5000);
         }
+        return completion;
+    }
+
+    async function render_preview(options = read_values()) {
+        if (!Screencam.gif_options_dialog.form) Screencam.gif_options_dialog.build();
+        return render_recording_preview(Screencam.gif_options_dialog.getFormResult(), {...options, watermark_enabled: options.watermark_enabled ?? true});
     }
 
     BBPlugin.register(plugin_id, {
         title: translate('modeler_toolkit'),
         author: 'Raven Studio',
         description: translate('rebuild_textures_and_uvs_create_outlines_and_record_animations_w'),
-        about: translate('uv_tools_outlines_java_conversion_layer_controls_dynamic_shadows'),
+        about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.1.1',
+        version: '3.3.2',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -2749,6 +2527,7 @@
             };
             Screencam.gif_options_dialog.form_config[watermark_field] = installed_watermark_field;
             Screencam.gif_options_dialog.form_config[watermark_settings_field] = installed_watermark_settings_field;
+            setup_floor_fields();
             setup_light_fields();
             setup_animation_fields();
             previous_open = Screencam.gif_options_dialog.onOpen;
@@ -2763,11 +2542,15 @@
             previous_confirm = Screencam.gif_options_dialog.onConfirm;
             wrapped_confirm = function(form_data) {
                 if (Project && form_data[animation_field]) animation_choices.set(Project, form_data[animation_field]);
-                return previous_confirm.call(this, form_data[export_field] ? {...form_data, shadow_enabled: false} : form_data);
+                return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
             };
             Screencam.gif_options_dialog.onConfirm = wrapped_confirm;
             previous_create_gif = Screencam.createGif;
-            wrapped_create_gif = async function(options = {}, callback) {
+            wrapped_create_gif = async function(options = {}, callback, preview_request) {
+                if (pending_preview && pending_preview !== preview_request) {
+                    Blockbench.showQuickMessage(translate('finish_or_cancel_the_current_gif_recording_first'), 3000);
+                    return;
+                }
                 if (active_session) {
                     if (active_session.frame?.isConnected) {
                         Blockbench.showQuickMessage(translate('finish_or_cancel_the_current_gif_recording_first'), 3000);
@@ -2775,7 +2558,6 @@
                     }
                     dispose_session(active_session);
                 }
-                const values = read_values();
                 const animations = capture_animations();
                 const animation = options.play ? options[animation_field]
                     ? animations.find(item => item.uuid === options[animation_field])
@@ -2784,21 +2566,25 @@
                     Blockbench.showQuickMessage(translate('choose_an_animation_available_in_this_project_before_recording'), 4000);
                     return;
                 }
-                const render_enabled = options[export_field] ?? values.enabled;
-                const render_values = {...values, ...capture_light_values(options, values), shadow_enabled: render_enabled && values.shadow_enabled, clean_uv: render_enabled && values.clean_uv, watermark_enabled: options[watermark_field] ?? false};
-                if (!animation && !render_values.shadow_enabled && !render_values.clean_uv && !(render_values.watermark_enabled && render_values.watermark_text)) return previous_create_gif.call(this, options, callback);
+                const render_values = preview_request?.render_values || capture_render_values(options);
                 const project = Project;
                 const generation = lifecycle;
-                await prepare_watermark_font(render_values);
+                const [, background] = await Promise.all([prepare_watermark_font(render_values), load_capture_background(options.background_image)]);
                 if (!plugin_loaded || generation !== lifecycle || Project !== project) return;
                 if (active_session) {
                     Blockbench.showQuickMessage(translate('finish_or_cancel_the_current_gif_recording_first'), 3000);
                     return;
                 }
                 const session = create_session(render_values);
+                session.preview_request = preview_request;
+                session.live_background = background;
                 active_session = session;
                 try {
-                    if (animation) prepare_capture_animation(session, animation);
+                    if (animation) {
+                        prepare_capture_animation(session, animation);
+                        Timeline.setTime(0);
+                        Animator.preview(true);
+                    }
                     const result = await previous_create_gif.call(this, options, callback);
                     if (!session.disposed) attach_recording(session, options);
                     return result;
@@ -2813,8 +2599,8 @@
                 icon: 'wb_shade',
                 condition: () => !!Project,
                 async click() {
-                    const data_url = await render_preview();
-                    if (data_url) Screencam.returnScreenshot(data_url);
+                    if (!Screencam.gif_options_dialog.form) Screencam.gif_options_dialog.build();
+                    await Screencam.gif_options_dialog.form_config[plugin_id + '_capture_preview'].click();
                 }
             });
             setup_tool_modules();
@@ -2828,6 +2614,7 @@
             font_process?.kill();
             font_process = null;
             abort_recording();
+            pending_preview?.finish(null);
             const form_state = capture_form();
             if (Screencam.createGif === wrapped_create_gif) Screencam.createGif = previous_create_gif;
             if (Screencam.gif_options_dialog.onConfirm === wrapped_confirm) Screencam.gif_options_dialog.onConfirm = previous_confirm;
@@ -2855,6 +2642,14 @@
             });
             installed_light_fields.clear();
             previous_light_fields.clear();
+            installed_floor_fields.forEach((field, key) => {
+                if (Screencam.gif_options_dialog.form_config[key] !== field) return;
+                const previous = previous_floor_fields.get(key);
+                if (previous === undefined) delete Screencam.gif_options_dialog.form_config[key];
+                else Screencam.gif_options_dialog.form_config[key] = previous;
+            });
+            installed_floor_fields.clear();
+            previous_floor_fields.clear();
             if (preview_dialog) preview_dialog.hide().delete();
             preview_dialog = null;
             if (settings_dialog) settings_dialog.hide().delete();
@@ -2869,7 +2664,6 @@
                 delete plugin_settings[key];
             });
             rebuild_form(form_state);
-            Object.keys(messages).forEach(key => delete Language.data[plugin_id + '.' + key]);
         }
     });
 })();

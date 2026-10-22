@@ -1,55 +1,90 @@
 # Modeler Toolkit
 
-A collection of texture, UV, modeling and capture tools for **Blockbench 5.2 or newer**. The interface follows Blockbench's language: French for French installations, English otherwise.
+Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
-## Install
+## Installation
 
-1. Open **File > Plugins** in Blockbench.
-2. Choose **Load Plugin from URL** and paste this URL:
+1. Ouvrez **Fichier > Plugins** dans Blockbench.
+2. Choisissez **Charger un plugin depuis une URL** et collez cette adresse :
 
    ```text
    https://raw.githubusercontent.com/RushLd/ModelerToolkit/main/modeler_toolkit.js
    ```
 
-3. Find the tools in the **Modeler Toolkit** menu. Capture options also appear in the GIF recording dialog.
+3. Retrouvez les outils dans le menu **Modeler Toolkit**. Les options de capture apparaissent également dans la fenêtre d’enregistrement GIF.
 
-Alternatively, download [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js) and use **Load Plugin from File**. Install only one copy. This repository is distributed independently from the official Blockbench plugin catalog.
+Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js), puis utiliser **Charger un plugin depuis un fichier**. Installez une seule copie. Ce dépôt est distribué indépendamment du catalogue officiel de Blockbench.
 
-## Tools
+## À quoi sert chaque bouton ?
 
-- **Optimize square textures and UVs**: share pixel-identical face regions, including rotated and mirrored matches, and rebuild square textures. Matching includes surrounding padding pixels and transparency. Textures shrink when a compatible layout fits; rebuilding can also keep their dimensions.
-- **Share UVs without rebuilding**: reuse matching regions while keeping texture images and dimensions unchanged.
-- **Restore original textures and UVs**: restore saved optimization data. Optimization supports Undo and Redo. Backups survive saving and reopening a `.bbmodel` file. Repeated optimization starts from the current textures and UVs, saves a new recovery state and retains earlier backups. Restoration steps back one optimization at a time.
-- **Export backups**: save the complete texture and UV recovery chain as JSON, including original image data. Incompatible older backups remain preserved and exportable.
-- **Create texture**: open Blockbench's regular texture creation tool.
-- **Clean UV edges**: inset selected face UVs to reduce texture bleeding. Original UVs are saved for restoration. Temporary capture cleanup changes rendered UVs only.
-- **Inverted cubes and outlines**: create inward-facing cubes named `<name>_inverted` or outline shells named `<name>_outline`. Outlines support cubes and meshes in compatible formats.
-- **Dynamic capture shadows**: project a shadow onto an invisible wall or floor using a shadow map. Choose color, opacity, sharpness and light direction, including per-export light presets.
-- **Animation recording**: select an animation from the current project when recording, including outside Animate mode.
-- **Watermark**: add one configurable line of text with color, font, size, position and margin. Enable it separately for each recording.
-- **Java conversion**: choose a target format and supported Java model version, with a copy option. The native conversion action stays available.
-- **Layer visibility**: hide or isolate elements and groups whose names contain `_layer`. No keyboard shortcut is assigned by default.
+| Bouton | Fonction |
+| --- | --- |
+| **Optimiser la texture et les UV** | Reconstruit les textures compatibles en carrés et fait partager une même zone aux faces dont les pixels sont identiques, y compris après rotation ou miroir. Le rembourrage détecté et la transparence sont pris en compte. La texture peut devenir plus petite, mais la réduction de taille n’est pas obligatoire. |
+| **Avancé > Partager les UV sans modifier la texture** | Regroupe les coordonnées UV des faces identiques sans redessiner l’image ni changer ses dimensions. Les zones devenues inutilisées restent dans la texture. |
+| **Nettoyer les bords UV** | Réduit légèrement les zones UV des éléments sélectionnés pour limiter les couleurs voisines qui débordent sur leurs bords. Sauvegarde les UV avant le nettoyage. Ne fusionne pas les doublons. |
+| **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour annuler une optimisation, utilisez la restauration des textures et UV décrite plus bas. |
+| **Avancé > Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
+| **Créer des contours** | Ajoute une enveloppe agrandie avec des faces inversées autour de la sélection pour produire un contour visible. L’épaisseur et la couleur ou la texture sont réglables. Les objets créés sont nommés `<name>_outline`. |
+| **Aperçu du rendu GIF** | Lance un aperçu animé avec les réglages de capture actuels : dimensions, cadrage, zoom, fond, animation, sol, ombre et filigrane. Le temps de génération dépend de la durée choisie et de l’encodage. |
+| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, le nettoyage UV, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
+| **Visibilité > Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`, ainsi que leur contenu. Un second clic rétablit ce que le bouton a masqué. |
+| **Visibilité > Afficher uniquement les calques** | Isole ces mêmes éléments et groupes `_layer` en masquant le reste. Un second clic rétablit la visibilité précédente. |
 
-## Defaults and privacy
+Les sous-menus **Avancé** et **Visibilité** apparaissent lorsqu’au moins un de leurs outils est disponible. Les deux boutons de calques agissent sur la hiérarchie du modèle, pas sur les calques de peinture des textures. Ils restent accessibles depuis la barre d’outils de la hiérarchie. Aucun raccourci clavier ne leur est attribué par défaut.
 
-New installations start with dynamic capture rendering and temporary UV cleanup disabled, and an empty, disabled watermark. Enabling dynamic rendering in the recording dialog enables the configured shadow, initially neutral gray at 35% opacity. Settings can be reset from **Modeler Toolkit > Settings**.
+Le raccourci **Créer une texture (Blockbench)** a été retiré de Modeler Toolkit. L’outil natif de Blockbench reste disponible dans son interface habituelle.
 
-When upgrading from Raven Toolkit or RavenTool, uninstall the old plugin before loading Modeler Toolkit. Existing settings are imported automatically, and earlier project restoration data remains supported. The new plugin identifier is `modeler_toolkit`.
+Lorsque plusieurs faces partagent les mêmes UV, peindre sur cette zone de texture modifie l’apparence de toutes ces faces.
 
-UV cleanup, cube inversion and outlines use implementations developed for this plugin. UV cleanup uses bounded insets and affine contraction; cube inversion matches surface coordinates; mesh outlines solve offset-plane constraints. No source from other plugins is bundled.
+## Sauvegardes et restauration
 
-The plugin does not upload models, textures or recordings and contains no telemetry or access-key service. Opening its settings discovers locally installed fonts when supported. Browsers may request permission; Windows desktop installations can use the system font list. Font names are cached locally. No fonts are bundled: use fonts you are entitled to use in your exported work.
+Deux boutons supplémentaires apparaissent lorsque le projet contient des données de récupération :
 
-## Compatibility and limitations
+- **Restaurer les textures et UV d’origine** revient à l’état précédant la dernière optimisation. Chaque restauration remonte d’une étape dans la chaîne des sauvegardes.
+- **Exporter les sauvegardes des textures et UV** enregistre cette chaîne en JSON, avec les images d’origine, y compris les sauvegardes devenues incompatibles.
 
-- The texture optimizer preserves box UV layouts, animated textures, layered textures, materials and unsupported element types instead of repacking them. It processes compatible per-face cube UVs and mesh UVs.
-- Exact duplicate matching includes the detected surrounding border. Regions with different padding are kept separate. No image resampling or smoothing is applied.
-- Slight sampling differences can occur at texel boundaries in the 3D preview after repacking. Keep the original model and use Undo or restoration if needed. Existing source image files are not overwritten automatically.
-- Changes to topology, textures, format or UV resolution can make an older recovery state incompatible. Restoration refuses incompatible states and offers backup export. You can still optimize the current model again; restoring that new optimization returns to the state immediately before it.
-- Reversible metadata is stored in `.bbmodel` projects. Game exports do not preserve plugin restoration data.
-- Partially transparent shadows need an opaque GIF background or an output format with full alpha, such as APNG. GIF transparency cannot represent smooth partial opacity.
-- Installed font discovery depends on the operating system and browser. The configured font and Arial remain available as fallbacks; missing fonts can change text appearance.
+L’optimisation accepte **Annuler** et **Rétablir**. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser les textures actuelles sans perdre les sauvegardes précédentes.
 
-## License
+Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et propose de l’exporter. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
 
-Modeler Toolkit is released under the [MIT License](LICENSE). No runtime dependencies are bundled; it uses APIs and libraries provided by Blockbench.
+## Enregistrement, sol et ombres
+
+Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
+
+L’ombre dynamique est calculée à partir du modèle animé et projetée sur un mur ou un sol invisible, ou sur le sol visible de rendu. Sa couleur, son opacité, sa netteté et la direction de la lumière sont réglables.
+
+Activez **Sol de rendu** pour ajouter une surface temporaire unie ou en dalles. Réglez sa largeur, sa profondeur et la taille des dalles en blocs : **1 bloc = 16 unités du modèle**. Les couleurs, l’épaisseur, la hauteur et les décalages X/Z sont également configurables.
+
+Le sol se place sous le point le plus bas du modèle à la première image enregistrée, puis reste fixe pendant l’animation. L’ombre s’arrête à ses bords. Prévoyez une surface assez grande pour les mouvements et l’ombre. Le sol est retiré à la fin de la capture, lors d’une annulation ou du déchargement du plugin. Il n’est jamais ajouté à la géométrie ni aux textures du modèle.
+
+Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
+
+**Aperçu du rendu GIF** utilise le moteur d’enregistrement natif avec les réglages choisis : résolution, cadrage, zoom, pixelisation, fond couleur ou image, animation, durée, fréquence d’images, rotation de la caméra, repères, sol, ombre et filigrane. L’animation est affichée dans ses proportions réelles. La caméra et l’état de l’animation sont ensuite restaurés. Les séquences PNG sont prévisualisées en APNG, sans créer d’archive.
+
+L’aperçu nécessite le temps de capture configuré, puis l’encodage. Il peut être annulé depuis le cadre d’enregistrement.
+
+Le **filigrane** comporte une ligne de texte avec couleur, police, taille, position et marge réglables. Son activation se choisit séparément pour chaque capture. Les polices installées sur l’ordinateur sont proposées lorsque le système permet de les lire.
+
+## Valeurs par défaut et confidentialité
+
+À la première installation, le rendu dynamique, le sol et le nettoyage UV temporaire sont désactivés. Le filigrane est vide et désactivé. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
+
+Pour migrer depuis Raven Toolkit ou RavenTool, désinstallez l’ancien plugin avant de charger Modeler Toolkit. Les paramètres existants sont importés automatiquement et les anciennes données de restauration restent prises en charge. L’identifiant du plugin est `modeler_toolkit`.
+
+Le nettoyage UV, l’inversion des cubes et les contours utilisent des implémentations développées pour ce plugin. Aucun code source d’autres plugins n’est embarqué.
+
+Le plugin n’envoie aucun modèle, texture ou enregistrement et ne comporte ni télémétrie ni service de clé d’accès. L’ouverture des paramètres peut rechercher les polices locales. Un navigateur peut demander une autorisation ; sur Windows, la version de bureau peut lire la liste système. Les noms des polices sont conservés localement. Aucune police n’est fournie avec le plugin.
+
+## Compatibilité et limites
+
+- L’optimiseur traite les UV par face des cubes et les UV de maillages compatibles. Il préserve les dispositions UV en boîte, les textures animées, la composition en calques, les matériaux et les éléments incompatibles au lieu de les réorganiser.
+- Les doublons sont comparés avec leur bordure détectée. Deux régions dont le rembourrage diffère restent distinctes. Les pixels ne sont ni redimensionnés ni lissés.
+- De légères différences d’échantillonnage peuvent apparaître aux limites des pixels après une réorganisation des UV. Utilisez l’annulation ou la restauration si nécessaire. Les fichiers d’images d’origine ne sont pas automatiquement écrasés.
+- Les données de récupération sont conservées dans les projets `.bbmodel`, pas dans les formats d’export destinés aux jeux.
+- Le GIF ne représente pas les transparences partielles progressives. Pour des ombres douces, utilisez un fond opaque ou un format à transparence complète comme l’APNG.
+- La découverte des polices dépend du système et du navigateur. Une police manquante peut modifier l’apparence du texte ; Arial reste disponible comme solution de repli.
+- Les fenêtres et les noms de formats fournis directement par Blockbench conservent la langue et les libellés de l’application.
+
+## Licence
+
+Modeler Toolkit est distribué sous [licence MIT](LICENSE). Aucune dépendance d’exécution n’est embarquée : le plugin utilise les interfaces et les bibliothèques fournies par Blockbench.
