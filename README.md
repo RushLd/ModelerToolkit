@@ -2,6 +2,8 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
+Version actuelle : **3.5.1**.
+
 ## Installation
 
 1. Ouvrez **Fichier > Plugins** dans Blockbench.
@@ -20,32 +22,31 @@ Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/M
 | Bouton | Fonction |
 | --- | --- |
 | **Optimiser la texture et les UV** | Reconstruit les textures compatibles en carrés et fait partager une même zone aux faces dont les pixels sont identiques, y compris après rotation ou miroir. Le rembourrage détecté et la transparence sont pris en compte. La texture peut devenir plus petite, mais la réduction de taille n’est pas obligatoire. |
-| **Avancé > Partager les UV sans modifier la texture** | Regroupe les coordonnées UV des faces identiques sans redessiner l’image ni changer ses dimensions. Les zones devenues inutilisées restent dans la texture. |
-| **Nettoyer les bords UV** | Réduit légèrement les zones UV des éléments sélectionnés pour limiter les couleurs voisines qui débordent sur leurs bords. Sauvegarde les UV avant le nettoyage. Ne fusionne pas les doublons. |
+| **Créer une texture avec des UV indépendants** | Fait l’inverse du partage : recrée chaque texture compatible en carré, avec une zone distincte pour chaque face, même si ses pixels sont identiques à ceux d’une autre. Conserve les pixels, les rotations, les miroirs et la transparence, avec 1 px transparent entre les zones. La texture peut s’agrandir. |
 | **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour annuler une optimisation, utilisez la restauration des textures et UV décrite plus bas. |
-| **Avancé > Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
+| **Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
 | **Créer des contours** | Ajoute une enveloppe agrandie avec des faces inversées autour de la sélection pour produire un contour visible. L’épaisseur et la couleur ou la texture sont réglables. Les objets créés sont nommés `<name>_outline`. |
-| **Aperçu du rendu GIF** | Lance un aperçu animé avec les réglages de capture actuels : dimensions, cadrage, zoom, fond, animation, éclairage, sol, ombre et filigrane. Le temps de génération dépend de la durée choisie et de l’encodage. |
-| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, le nettoyage UV, l’éclairage, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
-| **Visibilité > Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`, ainsi que leur contenu. Un second clic rétablit ce que le bouton a masqué. |
-| **Visibilité > Afficher uniquement les calques** | Isole ces mêmes éléments et groupes `_layer` en masquant le reste. Un second clic rétablit la visibilité précédente. |
+| **Aperçu du rendu GIF** | Affiche une image fixe du rendu avec les réglages actuels : dimensions, cadrage, zoom, fond, éclairage, sol, ombre et filigrane. Si une animation est sélectionnée, l’image montre sa première pose. |
+| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, l’éclairage, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
+| **Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`. Un second clic rétablit leur visibilité précédente. |
 
-Les sous-menus **Avancé** et **Visibilité** apparaissent lorsqu’au moins un de leurs outils est disponible. Les deux boutons de calques agissent sur la hiérarchie du modèle, pas sur les calques de peinture des textures. Ils restent accessibles depuis la barre d’outils de la hiérarchie. Aucun raccourci clavier ne leur est attribué par défaut.
+Le bouton de calques agit sur la hiérarchie du modèle, pas sur les calques de peinture des textures. Il reste accessible depuis la barre d’outils de la hiérarchie. Son raccourci peut être configuré dans les préférences de Blockbench.
 
 Le raccourci **Créer une texture (Blockbench)** a été retiré de Modeler Toolkit. L’outil natif de Blockbench reste disponible dans son interface habituelle.
 
 Lorsque plusieurs faces partagent les mêmes UV, peindre sur cette zone de texture modifie l’apparence de toutes ces faces.
 
+L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de conserver la largeur et la hauteur des régions en pixels. Quand l’atlas est déjà stable, une nouvelle optimisation ne crée pas de modification ni de sauvegarde supplémentaire.
+
+Pour peindre chaque face séparément, utilisez **Créer une texture avec des UV indépendants**. Le bouton agit sur tout le modèle, y compris les stades masqués. Chaque texture conserve ses faces attribuées : plusieurs textures ne sont pas fusionnées en une seule. Les pixels inutilisés ne sont pas recopiés. Les faces absentes restent absentes et les pixels transparents restent transparents. Les UV en boîte, les textures animées, les calques de peinture et les matériaux incompatibles sont conservés avec un message explicatif. Les atlas créés sont limités à 4096 × 4096 pixels.
+
 ## Sauvegardes et restauration
 
-Deux boutons supplémentaires apparaissent lorsque le projet contient des données de récupération :
+**Restaurer les textures et UV d’origine** apparaît lorsque le projet contient des données de récupération. Chaque restauration remonte d’une étape dans la chaîne des sauvegardes.
 
-- **Restaurer les textures et UV d’origine** revient à l’état précédant la dernière optimisation. Chaque restauration remonte d’une étape dans la chaîne des sauvegardes.
-- **Exporter les sauvegardes des textures et UV** enregistre cette chaîne en JSON, avec les images d’origine, y compris les sauvegardes devenues incompatibles.
+L’optimisation et la création d’UV indépendants acceptent **Annuler** et **Rétablir**. Le bouton de restauration revient aussi à l’état précédant la création d’UV indépendants. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser ou séparer les textures actuelles sans perdre les sauvegardes précédentes. Les fichiers image existants ne sont pas écrasés automatiquement : enregistrez la nouvelle texture et le modèle pour conserver le résultat.
 
-L’optimisation accepte **Annuler** et **Rétablir**. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser les textures actuelles sans perdre les sauvegardes précédentes.
-
-Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et propose de l’exporter. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
+Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et la conserve dans le projet. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
 
 ## Enregistrement, éclairage, sol et ombres
 
@@ -61,9 +62,9 @@ Activez **Éclairage personnalisé** dans la fenêtre GIF pour éclairer le mod�
 - **Intensité de la lumière** : puissance de la source directionnelle.
 - **Lumière ambiante** : éclairage neutre des faces moins exposées.
 
-La lumière prend sa direction par rapport à la caméra au début de la capture, puis reste fixe pendant l’animation, y compris lorsque la caméra tourne. L’ombre suit cette même source ; les anciens réglages de direction de l’ombre sont alors masqués. Sans lumière directionnelle, l’ombre portée disparaît. L’éclairage est indépendant de l’activation du sol et du nettoyage UV.
+La lumière prend sa direction par rapport à la caméra au début de la capture, puis reste fixe pendant l’animation, y compris lorsque la caméra tourne. L’ombre suit cette même source ; les anciens réglages de direction de l’ombre sont alors masqués. Sans lumière directionnelle, l’ombre portée disparaît. L’éclairage est indépendant de l’activation du sol.
 
-Le cadre de capture, l’aperçu animé et le GIF utilisent le même rendu. Les textures et les matériaux d’origine sont rétablis après chaque image : aucun pixel de texture, UV ou réglage d’éclairage de Blockbench n’est modifié. Les matériaux émissifs et les shaders bruts personnalisés conservent leur rendu propre. Il s’agit d’un éclairage directionnel avec ambiance, sans rebonds de lumière ni calcul physique comparable à Cycles.
+Le cadre de capture, l’aperçu fixe et le GIF utilisent le même rendu. Les matériaux d’origine sont rétablis après chaque image : aucun pixel de texture, UV ou réglage d’éclairage de Blockbench n’est modifié. Les matériaux émissifs et les shaders bruts personnalisés conservent leur rendu propre. Il s’agit d’un éclairage directionnel avec ambiance, sans rebonds de lumière ni calcul physique comparable à Cycles.
 
 Activez **Sol de rendu** pour ajouter une surface temporaire unie ou en dalles. Réglez sa largeur, sa profondeur et la taille des dalles en blocs : **1 bloc = 16 unités du modèle**. Les couleurs, l’épaisseur, la hauteur et les décalages X/Z sont également configurables.
 
@@ -71,26 +72,24 @@ Le sol se place sous le point le plus bas du modèle à la première image enreg
 
 Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle éclairé, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
 
-**Aperçu du rendu GIF** utilise le moteur d’enregistrement natif avec les réglages choisis : résolution, cadrage, zoom, pixelisation, fond couleur ou image, animation, durée, fréquence d’images, rotation de la caméra, repères, éclairage, sol, ombre et filigrane. L’animation est affichée dans ses proportions réelles. La caméra et l’état de l’animation sont ensuite restaurés. Les séquences PNG sont prévisualisées en APNG, sans créer d’archive.
-
-L’aperçu nécessite le temps de capture configuré, puis l’encodage. Il peut être annulé depuis le cadre d’enregistrement.
+**Aperçu du rendu GIF** capture une seule image PNG avec les réglages visuels choisis. Il montre la première pose de l’animation sélectionnée lorsqu’elle est activée et conserve les proportions de la capture. La caméra et l’état de l’animation sont ensuite restaurés.
 
 Le **filigrane** comporte une ligne de texte avec couleur, police, taille, position et marge réglables. Son activation se choisit séparément pour chaque capture. Les polices installées sur l’ordinateur sont proposées lorsque le système permet de les lire.
 
 ## Valeurs par défaut et confidentialité
 
-À la première installation, le rendu dynamique, l’éclairage personnalisé, le sol et le nettoyage UV temporaire sont désactivés. Le filigrane est vide et désactivé. L’éclairage personnalisé propose une lumière blanche à 70 % d’intensité avec 30 % de lumière ambiante, venant de la gauche à 45° de hauteur. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Avec l’éclairage personnalisé, cette opacité est pondérée par la part de lumière directionnelle. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
+À la première installation, le rendu dynamique, l’éclairage personnalisé et le sol sont désactivés. Le filigrane est vide et désactivé. L’éclairage personnalisé propose une lumière blanche à 70 % d’intensité avec 30 % de lumière ambiante, venant de la gauche à 45° de hauteur. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Avec l’éclairage personnalisé, cette opacité est pondérée par la part de lumière directionnelle. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
 
 Pour migrer depuis Raven Toolkit ou RavenTool, désinstallez l’ancien plugin avant de charger Modeler Toolkit. Les paramètres existants sont importés automatiquement et les anciennes données de restauration restent prises en charge. L’identifiant du plugin est `modeler_toolkit`.
 
-Le nettoyage UV, l’inversion des cubes et les contours utilisent des implémentations développées pour ce plugin. Aucun code source d’autres plugins n’est embarqué.
+L’inversion des cubes et les contours utilisent des implémentations développées pour ce plugin. Aucun code source d’autres plugins n’est embarqué.
 
 Le plugin n’envoie aucun modèle, texture ou enregistrement et ne comporte ni télémétrie ni service de clé d’accès. L’ouverture des paramètres peut rechercher les polices locales. Un navigateur peut demander une autorisation ; sur Windows, la version de bureau peut lire la liste système. Les noms des polices sont conservés localement. Aucune police n’est fournie avec le plugin.
 
 ## Compatibilité et limites
 
 - L’optimiseur traite les UV par face des cubes et les UV de maillages compatibles. Il préserve les dispositions UV en boîte, les textures animées, la composition en calques, les matériaux et les éléments incompatibles au lieu de les réorganiser.
-- Les doublons sont comparés avec leur bordure détectée. Deux régions dont le rembourrage diffère restent distinctes. Les pixels ne sont ni redimensionnés ni lissés.
+- Les doublons sont comparés sur les pixels contenus dans leurs régions UV, y compris après rotation ou miroir. Les pixels extérieurs aux faces ne bloquent pas leur fusion. L’alpha est comparé exactement ; les composantes RVB invisibles des pixels entièrement transparents sont ignorées. L’espacement autour des régions est conservé, mais les régions fusionnées partagent désormais la bordure de la région retenue. Les pixels ne sont ni redimensionnés ni lissés.
 - De légères différences d’échantillonnage peuvent apparaître aux limites des pixels après une réorganisation des UV. Utilisez l’annulation ou la restauration si nécessaire. Les fichiers d’images d’origine ne sont pas automatiquement écrasés.
 - Les données de récupération sont conservées dans les projets `.bbmodel`, pas dans les formats d’export destinés aux jeux.
 - Le GIF ne représente pas les transparences partielles progressives. Pour des ombres douces, utilisez un fond opaque ou un format à transparence complète comme l’APNG.
