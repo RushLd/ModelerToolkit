@@ -125,13 +125,14 @@
         "finish_the_current_edit_or_recording_before_rebuilding_textures": "Terminez la modification ou l’enregistrement en cours avant de reconstruire les textures.",
         "layered_texture_compositing_is_active_the_texture_stack_was_pres": "La composition des textures par calques est active. La pile de textures a été conservée.",
         "some_uvs_or_element_types_require_the_original_layout": " : certains UV ou types d’éléments nécessitent la disposition d’origine",
-        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et bordures, sans agrandir la texture",
-        "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture carrée compatible n’a pu être reconstruite sans agrandissement. Les textures et les UV d’origine ont été conservés.",
+        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et un espacement transparent de 1 px",
+        "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture carrée compatible n’a pu être reconstruite avec un espacement transparent de 1 px. Les textures et les UV d’origine ont été conservés. La limite de l’atlas est de 4096 × 4096 pixels.",
         "this_format_shares_a_non_square_uv_resolution_across_several_tex": "Ce format partage une résolution UV non carrée entre plusieurs textures. Leur réorganisation modifierait l’animation des textures ; la disposition d’origine a donc été conservée.",
         "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
         "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions conservées : la reconstruction ne nécessite pas de réduire la texture.",
+        "texture_grown_for_padding": "Texture agrandie pour conserver tous les pixels des faces et ajouter l’espacement transparent de 1 px.",
         "uv_regions": "\nRégions UV : ",
-        "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Les pixels des faces et des bordures sont conservés. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement.",
+        "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Seuls les pixels utilisés par les faces sont recopiés, avec 1 px transparent autour des régions UV. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement.",
         "finish_the_current_edit_or_recording_before_restoring_textures": "Terminez la modification ou l’enregistrement en cours avant de restaurer les textures.",
         "undo_the_project_format_or_uv_resolution_change_before_restoring": "Annulez le changement de format du projet ou de résolution UV avant de restaurer ces textures.",
         "an_optimized_texture_is_missing_or_has_a_different_resolution_un": "Une texture optimisée est manquante ou sa résolution a changé. Annulez son remplacement avant de lancer la restauration.",
@@ -896,8 +897,7 @@
                 const region_key = [x, y, width, height, ...(unique_faces ? [element.uuid, key] : [])].join('_');
                 let region = source.regions.get(region_key);
                 if (!region) {
-                    const border = Math.max(1, Math.ceil(source.width / texture.getUVWidth()), Math.ceil(source.height / texture.getUVHeight()));
-                    region = {source, x, y, width, height, border, key: texture.uuid + '_' + region_key};
+                    region = {source, x, y, width, height, key: texture.uuid + '_' + region_key};
                     const hash = unique_faces ? '' : hash_uv_region(region);
                     const matches = source.hashes.get(hash) || [];
                     const match = matches.find(candidate => equal_uv_regions(region, candidate.region, candidate.transform));
@@ -944,105 +944,7 @@
         }
     }
 
-    function square_region_tile(region, border) {
-        const width = region.width + border * 2;
-        const height = region.height + border * 2;
-        const data = new Uint32Array(width * height);
-        const source = region.source;
-        const words = new Uint32Array(source.pixels.buffer, source.pixels.byteOffset, source.pixels.length / 4);
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) data[y * width + x] = words[uv_region_pixel(region, x - border, y - border) / 4];
-        }
-        return {region, border, width, height, data};
-    }
-
-    function fit_square_regions(tiles, size, preserve_positions, budget) {
-        const pixels = new Uint32Array(size * size);
-        const occupied = new Uint8Array(size * size);
-        const placements = new Map();
-        function score(tile, left, top) {
-            if (tile.region.source.texture.wrap_mode === 'repeat' && (left < tile.border || top < tile.border || left + tile.region.width + tile.border > size || top + tile.region.height + tile.border > size)) return -1;
-            let overlap = 0;
-            for (let y = 0; y < tile.height; y++) {
-                const target_y = top + y - tile.border;
-                for (let x = 0; x < tile.width; x++) {
-                    if (--budget.remaining < 0) return -2;
-                    const target_x = left + x - tile.border;
-                    const value = tile.data[y * tile.width + x];
-                    if (target_x < 0 || target_y < 0 || target_x >= size || target_y >= size) {
-                        const clamped_x = Math.max(0, Math.min(size - 1, target_x)) - left + tile.border;
-                        const clamped_y = Math.max(0, Math.min(size - 1, target_y)) - top + tile.border;
-                        if (value !== tile.data[clamped_y * tile.width + clamped_x]) return -1;
-                        continue;
-                    }
-                    const index = target_y * size + target_x;
-                    if (occupied[index]) {
-                        if (pixels[index] !== value) return -1;
-                        overlap++;
-                    }
-                }
-            }
-            return overlap;
-        }
-        for (const tile of tiles) {
-            if (tile.region.width > size || tile.region.height > size) return null;
-            let best = null;
-            const original_x = tile.region.x;
-            const original_y = tile.region.y;
-            if (preserve_positions && original_x + tile.region.width <= size && original_y + tile.region.height <= size) {
-                const overlap = score(tile, original_x, original_y);
-                if (overlap === -2) return null;
-                if (overlap >= 0) best = {x: original_x, y: original_y, overlap};
-            }
-            if (!best) {
-                for (let y = 0; y <= size - tile.region.height; y++) {
-                    for (let x = 0; x <= size - tile.region.width; x++) {
-                        const overlap = score(tile, x, y);
-                        if (overlap === -2) return null;
-                        if (overlap >= 0 && (!best || overlap > best.overlap)) best = {x, y, overlap};
-                    }
-                }
-            }
-            if (!best) return null;
-            placements.set(tile.region, best);
-            for (let y = 0; y < tile.height; y++) {
-                const target_y = best.y + y - tile.border;
-                if (target_y < 0 || target_y >= size) continue;
-                for (let x = 0; x < tile.width; x++) {
-                    const target_x = best.x + x - tile.border;
-                    if (target_x < 0 || target_x >= size) continue;
-                    const index = target_y * size + target_x;
-                    pixels[index] = tile.data[y * tile.width + x];
-                    occupied[index] = 1;
-                }
-            }
-        }
-        return {size, placements, pixels};
-    }
-
-    function plan_square_texture(entries, power) {
-        const source = entries[0].region.source;
-        const regions = [...new Set(entries.map(entry => entry.region.target))];
-        const border = Math.max(1, Math.ceil(source.width / source.texture.getUVWidth()), Math.ceil(source.height / source.texture.getUVHeight()));
-        if (regions.reduce((count, region) => count + (region.width + border * 2) * (region.height + border * 2), 0) > 16777216) return null;
-        const tiles = regions.map(region => square_region_tile(region, border));
-        const budget = {remaining: 64000000};
-        const by_area = tiles.slice().sort((first, second) => second.width * second.height - first.width * first.height);
-        const by_height = tiles.slice().sort((first, second) => second.height - first.height || second.width - first.width);
-        const keep_size = source.width === source.height && source.width <= 2048 && (!power || (source.width & (source.width - 1)) === 0);
-        const fallback = keep_size ? fit_square_regions(by_area, source.width, true, {remaining: 16777216}) : null;
-        for (let size = 16; size * size < source.width * source.height && size <= 2048; size = power ? size * 2 : size + 16) {
-            if (regions.some(region => region.width > size || region.height > size)) continue;
-            for (const [ordered, preserve_positions] of [[by_area, true], [by_area, false], [by_height, false]]) {
-                const packed = fit_square_regions(ordered, size, preserve_positions, budget);
-                if (packed) return {...packed, source, entries, border};
-                if (budget.remaining < 0) return fallback ? {...fallback, source, entries, border} : null;
-            }
-        }
-        return fallback ? {...fallback, source, entries, border} : null;
-    }
-
-    function fit_independent_regions(regions, size, budget) {
+    function fit_padded_regions(regions, size, budget) {
         let free = [{x: 1, y: 1, width: size - 1, height: size - 1}];
         const placements = new Map();
         for (const region of regions) {
@@ -1091,20 +993,26 @@
         return placements;
     }
 
-    function plan_independent_texture(entries, power) {
+    function plan_padded_texture(entries, power, unique_faces) {
         const source = entries[0].region.source;
-        const regions = entries.map(entry => entry.region);
+        const regions = unique_faces ? entries.map(entry => entry.region) : [...new Set(entries.map(entry => entry.region.target))];
         const area = regions.reduce((total, region) => total + (region.width + 1) * (region.height + 1), 0);
         const minimum = regions.reduce((size, region) => Math.max(size, region.width + 2, region.height + 2), Math.ceil(Math.sqrt(area)) + 1);
         if (minimum > 4096 || area > 4095 * 4095) return null;
         const budget = {remaining: 16000000};
-        const ordered = regions.slice().sort((first, second) => Math.max(second.width, second.height) - Math.max(first.width, first.height) || second.width * second.height - first.width * first.height);
+        const orders = [
+            regions.slice().sort((first, second) => Math.max(second.width, second.height) - Math.max(first.width, first.height) || second.width * second.height - first.width * first.height),
+            regions.slice().sort((first, second) => second.width * second.height - first.width * first.height || second.height - first.height),
+            regions.slice().sort((first, second) => second.height - first.height || second.width - first.width)
+        ];
         for (let size = power ? Math.max(16, 2 ** Math.ceil(Math.log2(minimum))) : Math.max(16, Math.ceil(minimum / 16) * 16); size <= 4096; size = power ? size * 2 : size + Math.max(16, Math.floor(size / 128) * 16)) {
-            const placements = fit_independent_regions(ordered, size, budget);
-            if (!placements) {
+            let placements = null;
+            for (const ordered of orders) {
+                placements = fit_padded_regions(ordered, size, budget);
+                if (placements) break;
                 if (budget.remaining < 0) return null;
-                continue;
             }
+            if (!placements) continue;
             const pixels = new Uint32Array(size * size);
             const words = new Uint32Array(source.pixels.buffer, source.pixels.byteOffset, source.pixels.length / 4);
             for (const region of regions) {
@@ -1117,6 +1025,14 @@
             return {size, placements, pixels, source, entries, border: 1};
         }
         return null;
+    }
+
+    function plan_square_texture(entries, power) {
+        return plan_padded_texture(entries, power, false);
+    }
+
+    function plan_independent_texture(entries, power) {
+        return plan_padded_texture(entries, power, true);
     }
 
     function refresh_atlas_view() {
@@ -1251,7 +1167,7 @@
             atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + '\n\n' + translate('independent_uvs_created') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
             return result;
         }
-        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate('dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
+        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate(result.reduction < 0 ? 'texture_grown_for_padding' : 'dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
         atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
@@ -2485,7 +2401,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.5.1',
+        version: '3.5.2',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',

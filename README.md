@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
-Version actuelle : **3.5.1**.
+Version actuelle : **3.5.2**.
 
 ## Installation
 
@@ -21,7 +21,7 @@ Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/M
 
 | Bouton | Fonction |
 | --- | --- |
-| **Optimiser la texture et les UV** | Reconstruit les textures compatibles en carrés et fait partager une même zone aux faces dont les pixels sont identiques, y compris après rotation ou miroir. Le rembourrage détecté et la transparence sont pris en compte. La texture peut devenir plus petite, mais la réduction de taille n’est pas obligatoire. |
+| **Optimiser la texture et les UV** | Reconstruit les textures compatibles en carrés et fait partager une même zone aux faces dont les pixels sont identiques, y compris après rotation ou miroir. Réserve 1 px transparent autour des régions UV, sans recopier les pixels voisins ni prolonger leurs couleurs. La transparence des faces est conservée. La texture peut devenir plus petite ; elle peut aussi s’agrandir si l’espacement l’exige. |
 | **Créer une texture avec des UV indépendants** | Fait l’inverse du partage : recrée chaque texture compatible en carré, avec une zone distincte pour chaque face, même si ses pixels sont identiques à ceux d’une autre. Conserve les pixels, les rotations, les miroirs et la transparence, avec 1 px transparent entre les zones. La texture peut s’agrandir. |
 | **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour annuler une optimisation, utilisez la restauration des textures et UV décrite plus bas. |
 | **Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
@@ -36,7 +36,7 @@ Le raccourci **Créer une texture (Blockbench)** a été retiré de Modeler Tool
 
 Lorsque plusieurs faces partagent les mêmes UV, peindre sur cette zone de texture modifie l’apparence de toutes ces faces.
 
-L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de conserver la largeur et la hauteur des régions en pixels. Quand l’atlas est déjà stable, une nouvelle optimisation ne crée pas de modification ni de sauvegarde supplémentaire.
+L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de conserver la largeur et la hauteur des régions en pixels. Il recopie uniquement le contenu des régions UV. Les régions distinctes ne se chevauchent pas et sont séparées par au moins 1 px transparent, également présent aux bords de l’atlas. Les faces fusionnées partagent volontairement la même région. Quand l’atlas est déjà stable, une nouvelle optimisation ne crée pas de modification ni de sauvegarde supplémentaire.
 
 Pour peindre chaque face séparément, utilisez **Créer une texture avec des UV indépendants**. Le bouton agit sur tout le modèle, y compris les stades masqués. Chaque texture conserve ses faces attribuées : plusieurs textures ne sont pas fusionnées en une seule. Les pixels inutilisés ne sont pas recopiés. Les faces absentes restent absentes et les pixels transparents restent transparents. Les UV en boîte, les textures animées, les calques de peinture et les matériaux incompatibles sont conservés avec un message explicatif. Les atlas créés sont limités à 4096 × 4096 pixels.
 
@@ -89,7 +89,7 @@ Le plugin n’envoie aucun modèle, texture ou enregistrement et ne comporte ni 
 ## Compatibilité et limites
 
 - L’optimiseur traite les UV par face des cubes et les UV de maillages compatibles. Il préserve les dispositions UV en boîte, les textures animées, la composition en calques, les matériaux et les éléments incompatibles au lieu de les réorganiser.
-- Les doublons sont comparés sur les pixels contenus dans leurs régions UV, y compris après rotation ou miroir. Les pixels extérieurs aux faces ne bloquent pas leur fusion. L’alpha est comparé exactement ; les composantes RVB invisibles des pixels entièrement transparents sont ignorées. L’espacement autour des régions est conservé, mais les régions fusionnées partagent désormais la bordure de la région retenue. Les pixels ne sont ni redimensionnés ni lissés.
+- Les doublons sont comparés sur les pixels contenus dans leurs régions UV, y compris après rotation ou miroir. Les pixels extérieurs aux régions ne bloquent pas leur fusion et ne sont plus recopiés dans l’atlas. L’alpha est comparé exactement ; les composantes RVB invisibles des pixels entièrement transparents sont ignorées. Le padding est toujours de 1 px transparent, quelle que soit la résolution UV du projet. Les pixels ne sont ni redimensionnés ni lissés.
 - De légères différences d’échantillonnage peuvent apparaître aux limites des pixels après une réorganisation des UV. Utilisez l’annulation ou la restauration si nécessaire. Les fichiers d’images d’origine ne sont pas automatiquement écrasés.
 - Les données de récupération sont conservées dans les projets `.bbmodel`, pas dans les formats d’export destinés aux jeux.
 - Le GIF ne représente pas les transparences partielles progressives. Pour des ombres douces, utilisez un fond opaque ou un format à transparence complète comme l’APNG.
