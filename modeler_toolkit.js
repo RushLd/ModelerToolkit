@@ -131,6 +131,7 @@
         "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
         "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions conservées : la reconstruction ne nécessite pas de réduire la texture.",
         "texture_grown_for_padding": "Texture agrandie pour conserver tous les pixels des faces et ajouter l’espacement transparent de 1 px.",
+        "transparent_faces_disabled": "Faces entièrement transparentes rendues invisibles : ",
         "uv_regions": "\nRégions UV : ",
         "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Seuls les pixels utilisés par les faces sont recopiés, avec 1 px transparent autour des régions UV. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement.",
         "finish_the_current_edit_or_recording_before_restoring_textures": "Terminez la modification ou l’enregistrement en cours avant de restaurer les textures.",
@@ -770,13 +771,14 @@
         };
     }
 
-    function texture_uv_topology_matches(element, saved) {
-        return element.type === saved.type && Object.keys(element.faces).length === Object.keys(saved.faces).length
+    function texture_uv_topology_matches(element, saved, removed_faces = {}) {
+        return element.type === saved.type && Object.keys(element.faces).length === Object.keys(saved.faces).length - Object.keys(removed_faces).length
+            && Object.keys(removed_faces).every(key => element instanceof Mesh && !element.faces[key] && saved.faces[key] && removed_faces[key].vertices.every(vertex => element.vertices[vertex]))
             && Object.entries(element.faces).every(([key, face]) => saved.faces[key] && (!face.vertices
                 || face.vertices.length === saved.faces[key].vertices?.length && face.vertices.every(vertex => saved.faces[key].vertices.includes(vertex))));
     }
 
-    function apply_texture_uv(element, saved) {
+    function apply_texture_uv(element, saved, removed_faces = {}) {
         element[backup_key] = structuredClone(saved.plaster_backup || {});
         if (element instanceof Cube) {
             element.box_uv = saved.box_uv;
@@ -784,11 +786,13 @@
             element.autouv = saved.autouv;
             element.uv_offset = saved.uv_offset.slice();
         }
+        if (Object.keys(removed_faces).length) element.faces = Object.fromEntries(Object.keys(saved.faces).map(key => [key, removed_faces[key] ? new MeshFace(element, removed_faces[key]) : element.faces[key]]));
         for (const [key, face] of Object.entries(element.faces)) {
             face.uv = structuredClone(saved.faces[key].uv);
             face.texture = saved.faces[key].texture;
             if (element instanceof Cube) face.rotation = saved.faces[key].rotation;
         }
+        if (Object.keys(removed_faces).length) Mesh.preview_controller.updateGeometry(element);
     }
 
     function uv_region_pixel(region, x, y) {
@@ -840,6 +844,53 @@
                     if (first.source.pixels[first_offset + channel] !== second.source.pixels[second_offset + channel]) return false;
                 }
             }
+        }
+        return true;
+    }
+
+    function triangle_uses_uv_pixel(triangle, x, y) {
+        let polygon = triangle.map(point => [point[0] - x, point[1] - y]);
+        for (const [axis, edge, direction] of [[0, 0, 1], [0, 1, -1], [1, 0, 1], [1, 1, -1]]) {
+            const clipped = [];
+            for (let index = 0; index < polygon.length; index++) {
+                const current = polygon[index];
+                const previous = polygon[(index + polygon.length - 1) % polygon.length];
+                const inside = (current[axis] - edge) * direction >= 0;
+                const previous_inside = (previous[axis] - edge) * direction >= 0;
+                if (inside !== previous_inside) {
+                    const ratio = (edge - previous[axis]) / (current[axis] - previous[axis]);
+                    const intersection = previous.map((value, coordinate) => value + (current[coordinate] - value) * ratio);
+                    intersection[axis] = edge;
+                    clipped.push(intersection);
+                }
+                if (inside) clipped.push(current);
+            }
+            polygon = clipped;
+            if (polygon.length < 3) return false;
+        }
+        const area = polygon.reduce((total, point, index) => {
+            const next = polygon[(index + 1) % polygon.length];
+            return total + point[0] * next[1] - next[0] * point[1];
+        }, 0);
+        return !Number.isFinite(area) || Math.abs(area) > 0;
+    }
+
+    function transparent_uv_face(entry) {
+        const {element, face, region, scale} = entry;
+        let triangles = null;
+        if (element instanceof Mesh) {
+            if (face.vertices.length < 3 || face.vertices.length > 4) return false;
+            const vertices = face.vertices.length === 4 ? face.getSortedVertices() : face.vertices;
+            if (vertices.some(vertex => !Array.isArray(face.uv[vertex]))) return false;
+            const points = vertices.map(vertex => face.uv[vertex].map((value, axis) => value * scale[axis]));
+            triangles = [[points[0], points[1], points[2]]];
+            if (points.length === 4) triangles.push([points[0], points[2], points[3]]);
+            const area = triangles.reduce((total, triangle) => total + Math.abs((triangle[1][0] - triangle[0][0]) * (triangle[2][1] - triangle[0][1]) - (triangle[1][1] - triangle[0][1]) * (triangle[2][0] - triangle[0][0])), 0);
+            if (!Number.isFinite(area) || area === 0) triangles = null;
+        }
+        for (let y = 0; y < region.height; y++) for (let x = 0; x < region.width; x++) {
+            if (region.source.pixels[uv_region_pixel(region, x, y) + 3] === 0) continue;
+            if (!triangles || triangles.some(triangle => triangle_uses_uv_pixel(triangle, region.x + x, region.y + y))) return false;
         }
         return true;
     }
@@ -913,7 +964,9 @@
                     }
                     source.regions.set(region_key, region);
                 }
-                entries.push({element, key, face, region, scale, edge_sample: [0, 1].map(axis => min[axis] === max[axis])});
+                const entry = {element, key, face, region, scale, edge_sample: [0, 1].map(axis => min[axis] === max[axis])};
+                entry.transparent = !unique_faces && (element instanceof Cube ? region.transparent ??= transparent_uv_face(entry) : transparent_uv_face(entry));
+                entries.push(entry);
             }
         }
         return {entries, skipped};
@@ -1090,9 +1143,11 @@
                     skipped.push(texture.name + translate('some_uvs_or_element_types_require_the_original_layout'));
                     continue;
                 }
+                const hidden_entries = unique_faces ? [] : entries.filter(entry => entry.transparent);
+                const visible_entries = entries.filter(entry => !entry.transparent);
                 const planner = unique_faces ? plan_independent_texture : plan_square_texture;
-                const plan = planner(entries, !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat');
-                if (plan) plans.push(plan);
+                const plan = visible_entries.length ? planner(visible_entries, !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat') : {size: 16, placements: new Map(), pixels: new Uint32Array(256), source: entries[0].region.source, entries: [], border: 1};
+                if (plan) plans.push({...plan, hidden_entries});
                 else skipped.push(unique_faces ? texture.name + ' : ' + translate('independent_uvs_unavailable') : texture.name + translate('no_compatible_square_layout_found_with_the_same_pixels_and_borde'));
             }
         } catch (error) {
@@ -1101,6 +1156,7 @@
         if (!plans.length) return atlas_message(translate(unique_faces ? 'independent_uvs_unavailable' : 'no_compatible_square_texture_could_be_rebuilt_without_enlargemen') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         if (!unique_faces) {
             plans = plans.filter(plan => {
+                if (plan.hidden_entries.length) return true;
                 if (plan.size !== plan.source.width || plan.size !== plan.source.height) return true;
                 if (plan.entries.some(entry => {
                     const region = entry.region;
@@ -1115,7 +1171,8 @@
         }
         const change_project_size = !Format.per_texture_uv_size && Texture.all.length === 1 && plans.length === 1;
         if (!Format.per_texture_uv_size && !change_project_size && Project.texture_width !== Project.texture_height && Format.animated_textures) return atlas_message(translate('this_format_shares_a_non_square_uv_resolution_across_several_tex'));
-        const elements = [...new Set(plans.flatMap(plan => plan.entries.map(entry => entry.element)))];
+        const affected_entries = plans.flatMap(plan => [...plan.entries, ...plan.hidden_entries]);
+        const elements = [...new Set(affected_entries.map(entry => entry.element))];
         const textures = plans.map(plan => plan.source.texture);
         const backup = {
             version: 3,
@@ -1128,7 +1185,8 @@
             previous_backup,
             textures: textures.map(texture => ({...texture.getUndoCopy(true), image_data: texture.canvas.toDataURL('image/png')})),
             optimized_textures: plans.map(plan => ({uuid: plan.source.texture.uuid, width: plan.size, height: plan.size})),
-            elements: Object.fromEntries(elements.map(element => [element.uuid, capture_texture_uv(element)]))
+            elements: Object.fromEntries(elements.map(element => [element.uuid, capture_texture_uv(element)])),
+            removed_faces: Object.fromEntries(elements.filter(element => element instanceof Mesh).map(element => [element.uuid, Object.fromEntries(plans.flatMap(plan => plan.hidden_entries).filter(entry => entry.element === element).map(entry => [entry.key, entry.face.getUndoCopy()]))]).filter(([, faces]) => Object.keys(faces).length))
         };
         const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
@@ -1148,8 +1206,13 @@
                     const placement = plan.placements.get(target);
                     remap_texture_uv(entry, placement, plan.size, plan.size);
                 }
-                elements.filter(element => plan.entries.some(entry => entry.element === element)).forEach(element => element[backup_key] = {});
+                for (const entry of plan.hidden_entries) {
+                    if (entry.element instanceof Cube) entry.face.texture = null;
+                    else delete entry.element.faces[entry.key];
+                }
             }
+            elements.forEach(element => element[backup_key] = {});
+            elements.filter(element => backup.removed_faces[element.uuid]).forEach(element => Mesh.preview_controller.updateGeometry(element));
             Project[atlas_backup_key] = backup;
             refresh_atlas_view();
             Undo.finishEdit(translate(unique_faces ? 'separate_face_uvs' : 'rebuild_textures_and_share_matching_uvs'), aspects);
@@ -1160,15 +1223,16 @@
         }
         const original_pixels = plans.reduce((area, plan) => area + plan.source.width * plan.source.height, 0);
         const atlas_pixels = plans.reduce((area, plan) => area + plan.size * plan.size, 0);
-        const regions_before = plans.reduce((count, plan) => count + new Set(plan.entries.map(entry => entry.region)).size, 0);
+        const regions_before = plans.reduce((count, plan) => count + new Set([...plan.entries, ...plan.hidden_entries].map(entry => entry.region)).size, 0);
         const regions_after = plans.reduce((count, plan) => count + plan.placements.size, 0);
-        const result = {changed: true, mode: unique_faces ? 'independent_faces' : 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
+        const faces_disabled = plans.reduce((count, plan) => count + plan.hidden_entries.length, 0);
+        const result = {changed: true, mode: unique_faces ? 'independent_faces' : 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, faces_disabled, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
         if (unique_faces) {
             atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + '\n\n' + translate('independent_uvs_created') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
             return result;
         }
         const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate(result.reduction < 0 ? 'texture_grown_for_padding' : 'dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
-        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
+        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
 
@@ -1178,7 +1242,7 @@
         const textures = backup.textures.map(saved => Texture.all.find(texture => texture.uuid === saved.uuid));
         if (textures.some((texture, index) => !texture || texture.width !== backup.optimized_textures[index].width || texture.height !== backup.optimized_textures[index].height)) return atlas_restore_blocked(translate('an_optimized_texture_is_missing_or_has_a_different_resolution_un'));
         const elements = Outliner.elements.filter(element => backup.elements[element.uuid]);
-        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid]))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to'));
+        if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid], backup.removed_faces?.[element.uuid]))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to'));
         if (Outliner.elements.some(element => !backup.elements[element.uuid] && (element.faces ? Object.values(element.faces).some(face => textures.includes(face.getTexture())) : textures.some(texture => element.texture === texture.uuid)))) return atlas_restore_blocked(translate('new_geometry_uses_an_optimized_texture_undo_that_addition_before'));
         const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
@@ -1193,7 +1257,7 @@
                 texture.sync_to_project = '';
                 texture.fromDataURL(saved.image_data || saved.source);
             });
-            elements.forEach(element => apply_texture_uv(element, backup.elements[element.uuid]));
+            elements.forEach(element => apply_texture_uv(element, backup.elements[element.uuid], backup.removed_faces?.[element.uuid]));
             Project[atlas_backup_key] = structuredClone(backup.previous_backup || {});
             refresh_atlas_view();
             Undo.finishEdit(translate('restore_original_square_atlas_textures_and_uvs'), aspects);
@@ -2401,7 +2465,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.5.2',
+        version: '3.5.3',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',

@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
-Version actuelle : **3.5.2**.
+Version actuelle : **3.5.3**.
 
 ## Installation
 
@@ -38,13 +38,15 @@ Lorsque plusieurs faces partagent les mêmes UV, peindre sur cette zone de textu
 
 L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de conserver la largeur et la hauteur des régions en pixels. Il recopie uniquement le contenu des régions UV. Les régions distinctes ne se chevauchent pas et sont séparées par au moins 1 px transparent, également présent aux bords de l’atlas. Les faces fusionnées partagent volontairement la même région. Quand l’atlas est déjà stable, une nouvelle optimisation ne crée pas de modification ni de sauvegarde supplémentaire.
 
+Lors de l’optimisation, une face dont tous les pixels utilisés ont un alpha à zéro devient invisible. Un seul pixel avec un alpha supérieur à zéro, même presque transparent, suffit à conserver la face. Les composantes RVB des pixels entièrement transparents ne comptent pas. Sur un cube, le plugin désactive la face avec l’état invisible natif de Blockbench. Sur un maillage, il retire la face vide ; ses données restent dans la sauvegarde pour permettre sa restauration. Pour les triangles et les quadrilatères, seuls les pixels touchés par les triangles UV sont vérifiés. Le bilan affiche le nombre de faces traitées. La création d’UV indépendants conserve les faces vides afin de pouvoir les peindre ensuite.
+
 Pour peindre chaque face séparément, utilisez **Créer une texture avec des UV indépendants**. Le bouton agit sur tout le modèle, y compris les stades masqués. Chaque texture conserve ses faces attribuées : plusieurs textures ne sont pas fusionnées en une seule. Les pixels inutilisés ne sont pas recopiés. Les faces absentes restent absentes et les pixels transparents restent transparents. Les UV en boîte, les textures animées, les calques de peinture et les matériaux incompatibles sont conservés avec un message explicatif. Les atlas créés sont limités à 4096 × 4096 pixels.
 
 ## Sauvegardes et restauration
 
 **Restaurer les textures et UV d’origine** apparaît lorsque le projet contient des données de récupération. Chaque restauration remonte d’une étape dans la chaîne des sauvegardes.
 
-L’optimisation et la création d’UV indépendants acceptent **Annuler** et **Rétablir**. Le bouton de restauration revient aussi à l’état précédant la création d’UV indépendants. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser ou séparer les textures actuelles sans perdre les sauvegardes précédentes. Les fichiers image existants ne sont pas écrasés automatiquement : enregistrez la nouvelle texture et le modèle pour conserver le résultat.
+L’optimisation et la création d’UV indépendants acceptent **Annuler** et **Rétablir**. La restauration rétablit aussi les faces transparentes désactivées ou retirées par l’optimisation. Le bouton de restauration revient aussi à l’état précédant la création d’UV indépendants. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser ou séparer les textures actuelles sans perdre les sauvegardes précédentes. Les fichiers image existants ne sont pas écrasés automatiquement : enregistrez la nouvelle texture et le modèle pour conserver le résultat.
 
 Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et la conserve dans le projet. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
 
