@@ -115,6 +115,8 @@
         "no_elements_or_groups_containing_layer": "Aucun élément ni groupe dont le nom contient _layer.",
         "modeler_toolkit_texture_optimization": "Modeler Toolkit - Optimisation des textures",
         "box_uv_layouts_preserved": "Dispositions des UV de boîte conservées",
+        "box_uv_shared_resolution_preserved": " : la résolution UV partagée ne permet pas de déplacer ce dépliage en boîte sans changer son rendu",
+        "box_uv_modes_preserved": "\n\nLes modes UV sont conservés : les faces indépendantes restent indépendantes et les boîtes UV restent liées. Les dépliages en boîte identiques sont fusionnés sans rotation, avec 1 px transparent autour de chaque dépliage complet.",
         "textures_still_loading_or_unavailable": "Textures en cours de chargement ou indisponibles",
         "animated_layered_or_material_textures_preserved": "Textures animées, à calques ou associées à un matériau conservées",
         "textures_exceeding_the_safe_comparison_size": "Textures dépassant la taille limite de comparaison",
@@ -817,6 +819,15 @@
         return uv_region_pixel(region, pixel_x, pixel_y);
     }
 
+    function masked_uv_alpha(region, x, y, transform = 0) {
+        let pixel_x = transform & 4 ? y : x;
+        let pixel_y = transform & 4 ? x : y;
+        if (transform & 1) pixel_x = region.width - 1 - pixel_x;
+        if (transform & 2) pixel_y = region.height - 1 - pixel_y;
+        if (region.mask && !region.mask[pixel_y * region.width + pixel_x]) return 0;
+        return region.source.pixels[uv_region_pixel(region, pixel_x, pixel_y) + 3];
+    }
+
     function hash_uv_region(region, transform = 0) {
         const width = transform & 4 ? region.height : region.width;
         const height = transform & 4 ? region.width : region.height;
@@ -824,7 +835,7 @@
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const offset = transformed_uv_pixel(region, x, y, transform);
-                const alpha = region.source.pixels[offset + 3];
+                const alpha = masked_uv_alpha(region, x, y, transform);
                 for (let channel = 0; channel < 4; channel++) hash = Math.imul(hash ^ (alpha ? region.source.pixels[offset + channel] : 0), 16777619);
             }
         }
@@ -837,8 +848,8 @@
             for (let x = 0; x < first.width; x++) {
                 const first_offset = uv_region_pixel(first, x, y);
                 const second_offset = transformed_uv_pixel(second, x, y, transform);
-                const alpha = first.source.pixels[first_offset + 3];
-                if (alpha !== second.source.pixels[second_offset + 3]) return false;
+                const alpha = masked_uv_alpha(first, x, y);
+                if (alpha !== masked_uv_alpha(second, x, y, transform)) return false;
                 if (!alpha) continue;
                 for (let channel = 0; channel < 4; channel++) {
                     if (first.source.pixels[first_offset + channel] !== second.source.pixels[second_offset + channel]) return false;
@@ -904,11 +915,12 @@
         }
         for (const element of Outliner.elements) {
             if (!(element instanceof Cube || element instanceof Mesh)) continue;
-            if (element instanceof Cube && element.box_uv) {
+            if (element instanceof Cube && element.box_uv && unique_faces) {
                 skip(translate('box_uv_layouts_preserved'));
                 continue;
             }
             for (const [key, face] of Object.entries(element.faces)) {
+                if (face.texture === null) continue;
                 const texture = face.getTexture();
                 if (!(texture instanceof Texture)) continue;
                 if (texture.error || !texture.width || !texture.height || texture.canvas.width !== texture.width || texture.canvas.height !== texture.height) {
@@ -945,16 +957,17 @@
                 const y = Math.min(source.height - 1, Math.floor(min[1]));
                 const width = Math.max(1, Math.ceil(max[0]) - x);
                 const height = Math.max(1, Math.ceil(max[1]) - y);
-                const region_key = [x, y, width, height, ...(unique_faces ? [element.uuid, key] : [])].join('_');
+                const independent = unique_faces || element.box_uv;
+                const region_key = [x, y, width, height, ...(independent ? [element.uuid, key] : [])].join('_');
                 let region = source.regions.get(region_key);
                 if (!region) {
                     region = {source, x, y, width, height, key: texture.uuid + '_' + region_key};
-                    const hash = unique_faces ? '' : hash_uv_region(region);
-                    const matches = source.hashes.get(hash) || [];
+                    const hash = independent ? '' : hash_uv_region(region);
+                    const matches = independent ? [] : source.hashes.get(hash) || [];
                     const match = matches.find(candidate => equal_uv_regions(region, candidate.region, candidate.transform));
                     region.target = match?.region || region;
                     region.transform = match?.transform || 0;
-                    if (!unique_faces && region.target === region) {
+                    if (!independent && region.target === region) {
                         for (let transform = 0; transform < 8; transform++) {
                             const transformed_hash = transform === 0 ? hash : hash_uv_region(region, transform);
                             const candidates = source.hashes.get(transformed_hash) || [];
@@ -969,7 +982,49 @@
                 entries.push(entry);
             }
         }
+        if (!unique_faces) group_box_uv_regions(entries);
         return {entries, skipped};
+    }
+
+    function group_box_uv_regions(entries) {
+        const boxes = new Map();
+        const hashes = new Map();
+        for (const entry of entries) {
+            if (!(entry.element instanceof Cube) || !entry.element.box_uv) continue;
+            if (!boxes.has(entry.element)) boxes.set(entry.element, []);
+            boxes.get(entry.element).push(entry);
+        }
+        for (const [element, faces] of boxes) {
+            const source = faces[0].region.source;
+            const referenced = Object.values(element.faces).filter(face => face.texture !== null && face.getTexture() instanceof Texture);
+            if (referenced.length !== faces.length || faces.some(entry => entry.region.source !== source)) {
+                faces.forEach(entry => entry.unsupported_box = true);
+                continue;
+            }
+            const visible = faces.filter(entry => !entry.transparent);
+            if (!visible.length) continue;
+            const x = Math.min(...visible.map(entry => entry.region.x));
+            const y = Math.min(...visible.map(entry => entry.region.y));
+            const width = Math.max(...visible.map(entry => entry.region.x + entry.region.width)) - x;
+            const height = Math.max(...visible.map(entry => entry.region.y + entry.region.height)) - y;
+            let region = {source, x, y, width, height, key: source.texture.uuid + '_box_' + element.uuid, mask: new Uint8Array(width * height), transform: 0};
+            for (const entry of visible) {
+                const face = entry.region;
+                for (let row = 0; row < face.height; row++) region.mask.fill(1, (face.y - y + row) * width + face.x - x, (face.y - y + row) * width + face.x - x + face.width);
+            }
+            const hash = source.texture.uuid + '_' + hash_uv_region(region);
+            const matches = hashes.get(hash) || [];
+            region.target = matches.find(candidate => equal_uv_regions(region, candidate)) || region;
+            if (region.target === region) {
+                matches.push(region);
+                hashes.set(hash, matches);
+            } else if (region.target.x === x && region.target.y === y) region = region.target;
+            const layout = {element, region, scale: faces[0].scale.slice(), offset: element.uv_offset.slice()};
+            for (const entry of visible) {
+                entry.region = region;
+                entry.box_layout = layout;
+            }
+        }
     }
 
     function remap_texture_uv(entry, placement, width, height) {
@@ -1046,19 +1101,19 @@
         return placements;
     }
 
-    function plan_padded_texture(entries, power, unique_faces) {
+    function plan_padded_texture(entries, power, unique_faces, fixed_size = 0) {
         const source = entries[0].region.source;
         const regions = unique_faces ? entries.map(entry => entry.region) : [...new Set(entries.map(entry => entry.region.target))];
         const area = regions.reduce((total, region) => total + (region.width + 1) * (region.height + 1), 0);
         const minimum = regions.reduce((size, region) => Math.max(size, region.width + 2, region.height + 2), Math.ceil(Math.sqrt(area)) + 1);
-        if (minimum > 4096 || area > 4095 * 4095) return null;
+        if (minimum > 4096 || area > 4095 * 4095 || fixed_size && minimum > fixed_size) return null;
         const budget = {remaining: 16000000};
         const orders = [
             regions.slice().sort((first, second) => Math.max(second.width, second.height) - Math.max(first.width, first.height) || second.width * second.height - first.width * first.height),
             regions.slice().sort((first, second) => second.width * second.height - first.width * first.height || second.height - first.height),
             regions.slice().sort((first, second) => second.height - first.height || second.width - first.width)
         ];
-        for (let size = power ? Math.max(16, 2 ** Math.ceil(Math.log2(minimum))) : Math.max(16, Math.ceil(minimum / 16) * 16); size <= 4096; size = power ? size * 2 : size + Math.max(16, Math.floor(size / 128) * 16)) {
+        for (let size = fixed_size || (power ? Math.max(16, 2 ** Math.ceil(Math.log2(minimum))) : Math.max(16, Math.ceil(minimum / 16) * 16)); size <= (fixed_size || 4096); size = power ? size * 2 : size + Math.max(16, Math.floor(size / 128) * 16)) {
             let placements = null;
             for (const ordered of orders) {
                 placements = fit_padded_regions(ordered, size, budget);
@@ -1072,7 +1127,10 @@
                 const placement = placements.get(region);
                 for (let y = 0; y < region.height; y++) {
                     const offset = uv_region_pixel(region, 0, y) / 4;
-                    pixels.set(words.subarray(offset, offset + region.width), (placement.y + y) * size + placement.x);
+                    const destination = (placement.y + y) * size + placement.x;
+                    if (region.mask) {
+                        for (let x = 0; x < region.width; x++) if (region.mask[y * region.width + x]) pixels[destination + x] = words[offset + x];
+                    } else pixels.set(words.subarray(offset, offset + region.width), destination);
                 }
             }
             return {size, placements, pixels, source, entries, border: 1};
@@ -1080,8 +1138,8 @@
         return null;
     }
 
-    function plan_square_texture(entries, power) {
-        return plan_padded_texture(entries, power, false);
+    function plan_square_texture(entries, power, fixed_size = 0) {
+        return plan_padded_texture(entries, power, false, fixed_size);
     }
 
     function plan_independent_texture(entries, power) {
@@ -1097,13 +1155,13 @@
         MenuBar.update();
     }
 
-    function write_square_bitmap(texture, data_url, size, pixels) {
+    function write_square_bitmap(texture, data_url, size, pixels, uv_width = size, uv_height = size) {
         texture.stopWatcher();
         texture.path = '';
         texture.sync_to_project = '';
         texture.keep_size = true;
-        texture.uv_width = size;
-        texture.uv_height = size;
+        texture.uv_width = uv_width;
+        texture.uv_height = uv_height;
         texture.fromDataURL(data_url);
         texture.width = size;
         texture.height = size;
@@ -1136,18 +1194,25 @@
                 let references = 0;
                 let unsupported = false;
                 for (const element of Outliner.elements) {
-                    if (element instanceof Cube || element instanceof Mesh) references += Object.values(element.faces).filter(face => face.getTexture() === texture).length;
+                    if (element instanceof Cube || element instanceof Mesh) references += Object.values(element.faces).filter(face => face.texture !== null && face.getTexture() === texture).length;
                     else if (element.texture === texture.uuid) unsupported = true;
                 }
-                if (unsupported || references !== entries.length) {
+                if (unsupported || references !== entries.length || entries.some(entry => entry.unsupported_box)) {
                     skipped.push(texture.name + translate('some_uvs_or_element_types_require_the_original_layout'));
                     continue;
                 }
                 const hidden_entries = unique_faces ? [] : entries.filter(entry => entry.transparent);
                 const visible_entries = entries.filter(entry => !entry.transparent);
+                const box_entry = entries.find(entry => entry.element instanceof Cube && entry.element.box_uv);
+                const fixed_size = box_entry && !Format.per_texture_uv_size && Texture.all.length !== 1 ? texture.width : 0;
+                if (fixed_size && texture.width !== texture.height) {
+                    skipped.push(texture.name + translate('box_uv_shared_resolution_preserved'));
+                    continue;
+                }
                 const planner = unique_faces ? plan_independent_texture : plan_square_texture;
-                const plan = visible_entries.length ? planner(visible_entries, !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat') : {size: 16, placements: new Map(), pixels: new Uint32Array(256), source: entries[0].region.source, entries: [], border: 1};
-                if (plan) plans.push({...plan, hidden_entries});
+                const empty_size = fixed_size || 16;
+                const plan = visible_entries.length ? planner(visible_entries, !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat', fixed_size) : {size: empty_size, placements: new Map(), pixels: new Uint32Array(empty_size * empty_size), source: entries[0].region.source, entries: [], border: 1};
+                if (plan) plans.push({...plan, hidden_entries, uv_width: box_entry ? plan.size / box_entry.scale[0] : plan.size, uv_height: box_entry ? plan.size / box_entry.scale[1] : plan.size});
                 else skipped.push(unique_faces ? texture.name + ' : ' + translate('independent_uvs_unavailable') : texture.name + translate('no_compatible_square_layout_found_with_the_same_pixels_and_borde'));
             }
         } catch (error) {
@@ -1180,8 +1245,8 @@
             format: Format.id,
             width: Project.texture_width,
             height: Project.texture_height,
-            optimized_width: change_project_size ? plans[0].size : Project.texture_width,
-            optimized_height: change_project_size ? plans[0].size : Project.texture_height,
+            optimized_width: change_project_size ? plans[0].uv_width : Project.texture_width,
+            optimized_height: change_project_size ? plans[0].uv_height : Project.texture_height,
             previous_backup,
             textures: textures.map(texture => ({...texture.getUndoCopy(true), image_data: texture.canvas.toDataURL('image/png')})),
             optimized_textures: plans.map(plan => ({uuid: plan.source.texture.uuid, width: plan.size, height: plan.size})),
@@ -1191,7 +1256,10 @@
         const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
         try {
-            if (change_project_size) Project.texture_width = Project.texture_height = plans[0].size;
+            if (change_project_size) {
+                Project.texture_width = plans[0].uv_width;
+                Project.texture_height = plans[0].uv_height;
+            }
             for (const plan of plans) {
                 const canvas = document.createElement('canvas');
                 canvas.width = canvas.height = plan.size;
@@ -1200,11 +1268,18 @@
                 image.data.set(new Uint8ClampedArray(plan.pixels.buffer));
                 context.putImageData(image, 0, 0);
                 const texture = plan.source.texture;
-                write_square_bitmap(texture, canvas.toDataURL('image/png'), plan.size, plan.pixels);
+                write_square_bitmap(texture, canvas.toDataURL('image/png'), plan.size, plan.pixels, plan.uv_width, plan.uv_height);
+                const moved_boxes = new Set();
                 for (const entry of plan.entries) {
                     const target = entry.region.target;
                     const placement = plan.placements.get(target);
-                    remap_texture_uv(entry, placement, plan.size, plan.size);
+                    if (entry.box_layout) {
+                        const layout = entry.box_layout;
+                        if (!moved_boxes.has(layout)) {
+                            layout.element.uv_offset = layout.offset.map((value, axis) => value + ([placement.x, placement.y][axis] - [layout.region.x, layout.region.y][axis]) / layout.scale[axis]);
+                            moved_boxes.add(layout);
+                        }
+                    } else remap_texture_uv(entry, placement, plan.size, plan.size);
                 }
                 for (const entry of plan.hidden_entries) {
                     if (entry.element instanceof Cube) entry.face.texture = null;
@@ -1226,13 +1301,14 @@
         const regions_before = plans.reduce((count, plan) => count + new Set([...plan.entries, ...plan.hidden_entries].map(entry => entry.region)).size, 0);
         const regions_after = plans.reduce((count, plan) => count + plan.placements.size, 0);
         const faces_disabled = plans.reduce((count, plan) => count + plan.hidden_entries.length, 0);
-        const result = {changed: true, mode: unique_faces ? 'independent_faces' : 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, faces_disabled, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
+        const box_layouts = new Set(plans.flatMap(plan => plan.entries.filter(entry => entry.box_layout).map(entry => entry.element))).size;
+        const result = {changed: true, mode: unique_faces ? 'independent_faces' : 'square_atlas', original_pixels, atlas_pixels, reduction: 1 - atlas_pixels / original_pixels, regions_before, regions_after, faces_disabled, box_layouts, textures: plans.map(plan => ({name: plan.source.texture.name, before: [plan.source.width, plan.source.height], after: [plan.size, plan.size], border: plan.border, regions: plan.placements.size})), skipped};
         if (unique_faces) {
             atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + '\n\n' + translate('independent_uvs_created') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
             return result;
         }
         const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate(result.reduction < 0 ? 'texture_grown_for_padding' : 'dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
-        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
+        atlas_message(result.textures.map(texture => texture.name + ' : ' + texture.before.join(' × ') + ' → ' + texture.after.join(' × ')).join('\n') + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (box_layouts ? translate('box_uv_modes_preserved') : '') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
 
@@ -2465,7 +2541,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.5.3',
+        version: '3.6.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
