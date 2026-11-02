@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
-Version actuelle : **3.6.0**.
+Version actuelle : **3.6.1**.
 
 ## Installation
 
@@ -55,6 +55,8 @@ Un changement de géométrie, de textures, de format ou de résolution UV peut r
 ## Enregistrement, éclairage, sol et ombres
 
 Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
+
+L’option **Ombre dynamique / Rendu propre** applique un léger retrait des bords UV pendant le dessin pour limiter les bavures de pixels voisins. Ce nettoyage fonctionne avec ou sans filigrane, dans le cadre de capture, l’aperçu fixe et les exports. Il respecte les UV par face, les boîtes UV, les rotations, les miroirs et les images des textures animées. Seules les coordonnées d’affichage sont ajustées temporairement puis restaurées après chaque image, même en cas d’erreur : les UV du modèle, les textures et les sauvegardes restent intacts.
 
 L’ombre dynamique est calculée à partir du modèle animé et projetée sur un mur ou un sol invisible, ou sur le sol visible de rendu. Sa couleur, son opacité, sa netteté et la direction de la lumière sont réglables.
 

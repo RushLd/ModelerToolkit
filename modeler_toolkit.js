@@ -1706,7 +1706,7 @@
         const overrides = Object.fromEntries([...floor_keys, ...lighting_keys].map(key => [key, options[plugin_id + '_' + key]]));
         const values = read_values(overrides);
         const render_enabled = options[export_field] ?? values.enabled;
-        return {...values, ...capture_light_values(options, values), shadow_enabled: (render_enabled || values.floor_enabled || values.lighting_enabled) && values.shadow_enabled, watermark_enabled: options[watermark_field] ?? false};
+        return {...values, ...capture_light_values(options, values), clean_uv: !!render_enabled, shadow_enabled: (render_enabled || values.floor_enabled || values.lighting_enabled) && values.shadow_enabled, watermark_enabled: options[watermark_field] ?? false};
     }
 
     function setup_floor_fields() {
@@ -2163,18 +2163,55 @@
         return material;
     }
 
+    function clean_render_uv(element, snapshots) {
+        const uv = element.mesh?.geometry?.getAttribute('uv');
+        if (!uv || uv.itemSize !== 2 || uv.isInterleavedBufferAttribute || snapshots.has(uv)) return;
+        const faces = element instanceof Cube ? Canvas.face_order.map(key => element.faces[key]) : Object.values(element.faces).filter(face => face.vertices.length > 2);
+        const counts = faces.map(face => element instanceof Cube ? 4 : face.vertices.length);
+        if (counts.reduce((sum, count) => sum + count, 0) !== uv.count) return;
+        let offset = 0;
+        faces.forEach((face, face_index) => {
+            const start = offset;
+            const count = counts[face_index];
+            offset += count;
+            const texture = face.getTexture();
+            if (face.texture === null || !(texture instanceof Texture)) return;
+            [texture.width, texture.height].forEach((size, axis) => {
+                if (!Number.isFinite(size) || size <= 0) return;
+                const coordinates = Array.from({length: count}, (_, index) => (axis ? uv.getY(start + index) : uv.getX(start + index)) * size);
+                const lower = Math.min(...coordinates);
+                const upper = Math.max(...coordinates);
+                const span = upper - lower;
+                if (!Number.isFinite(span) || span <= 0) return;
+                const margin = 1 / 32;
+                const lower_shift = Math.abs(lower - Math.round(lower)) < 1 / 16 ? Math.min(Math.max(Math.round(lower) + margin - lower, 0), span / 4) : 0;
+                const upper_shift = Math.abs(upper - Math.round(upper)) < 1 / 16 ? Math.min(Math.max(upper - Math.round(upper) + margin, 0), span / 4) : 0;
+                if (!lower_shift && !upper_shift) return;
+                if (!snapshots.has(uv)) snapshots.set(uv, uv.array.slice());
+                coordinates.forEach((coordinate, index) => {
+                    const value = (lower + lower_shift + (coordinate - lower) * (span - lower_shift - upper_shift) / span) / size;
+                    if (axis) uv.setY(start + index, value);
+                    else uv.setX(start + index, value);
+                });
+            });
+        });
+        if (snapshots.has(uv)) uv.needsUpdate = true;
+    }
+
     function render_frame(session, renderer, render_scene, camera, render) {
         if (session.disposed || Project !== session.project) return render();
         const elements = get_render_elements(session.project);
         const bounds = get_bounds(elements);
         if (bounds.isEmpty()) return render();
         const cast_snapshots = new Map();
+        const uv_snapshots = new Map();
         const shadow_state = {enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type, autoUpdate: renderer.shadowMap.autoUpdate, needsUpdate: renderer.shadowMap.needsUpdate};
         const original_buffer_render = renderer.renderBufferDirect;
         const casters = new Set(elements.map(element => element.mesh));
         const lit_meshes = new Set(casters);
         let buffer_wrapper;
         try {
+            if (session.options.clean_uv) elements.forEach(element => clean_render_uv(element, uv_snapshots));
             if (session.lighting_uniforms) position_lighting(session, camera);
             if (session.floor) {
                 position_floor(session, camera, bounds);
@@ -2206,6 +2243,10 @@
             }
             return render();
         } finally {
+            uv_snapshots.forEach((array, uv) => {
+                uv.array.set(array);
+                uv.needsUpdate = true;
+            });
             if (session.floor) render_scene.remove(session.floor);
             if (session.light) {
                 render_scene.remove(session.receiver, session.light, session.light.target);
@@ -2531,7 +2572,7 @@
 
     async function render_preview(options = read_values()) {
         if (!Screencam.gif_options_dialog.form) Screencam.gif_options_dialog.build();
-        return render_recording_preview(Screencam.gif_options_dialog.getFormResult(), {...options, watermark_enabled: options.watermark_enabled ?? true});
+        return render_recording_preview(Screencam.gif_options_dialog.getFormResult(), {...options, clean_uv: options.clean_uv ?? !!options.enabled, watermark_enabled: options.watermark_enabled ?? true});
     }
 
     BBPlugin.register(plugin_id, {
@@ -2541,7 +2582,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.6.0',
+        version: '3.6.1',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
