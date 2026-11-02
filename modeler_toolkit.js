@@ -46,8 +46,8 @@
         "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": "Utiliser le rendu dynamique par défaut lors de l’enregistrement d’un GIF, d’un APNG ou d’une séquence PNG.",
         "dynamic_shadow": "Ombre dynamique",
         "project_the_animated_model_onto_an_invisible_wall_or_floor_using": "Projeter l’ombre du modèle animé sur un mur ou un sol invisible à l’aide d’une carte d’ombres.",
-        "shadow_color_tool_settings": "Couleur de l’ombre / Paramètres des outils",
-        "open_the_color_picker_and_all_modeler_toolkit_settings": "Ouvrir le sélecteur de couleur et tous les paramètres de Modeler Toolkit.",
+        "shadow_color_tool_settings": "Couleur de l’ombre",
+        "open_the_color_picker_and_all_modeler_toolkit_settings": "Choisir la couleur de l’ombre dans les paramètres de rendu.",
         "shadow_opacity": "Opacité de l’ombre (%)",
         "partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain": "Une opacité partielle nécessite un fond GIF opaque ou le format APNG pour conserver une transparence progressive.",
         "shadow_softness": "Flou de l’ombre",
@@ -166,11 +166,8 @@
         "modeler_toolkit_settings": "Paramètres de Modeler Toolkit",
         "toggle_layers": "Afficher / masquer les calques",
         "modeler_toolkit": "Modeler Toolkit",
-        "available_tools": "Outils disponibles",
-        "gif_render_the_invisible_wall_or_floor_only_receives_the_shadow": "L’ombre peut être projetée sur une surface invisible ou un sol de rendu visible. Le sol est temporaire et n’est jamais ajouté au modèle.",
         "the_installed_font_list_is_unavailable_reopen_settings_after_all": "La liste des polices installées est indisponible. Autorisez l’accès aux polices locales, puis rouvrez les paramètres.",
         "preview": "Aperçu",
-        "reset_to_defaults": "Rétablir les valeurs par défaut",
         "preview_gif_render": "Aperçu du rendu GIF",
         "back_to_settings": "Retour aux paramètres",
         "modeler_toolkit_watermark": "Filigrane de Modeler Toolkit",
@@ -191,6 +188,14 @@
         "watermark": "Filigrane",
         "add_your_configured_text_to_every_frame_independently_of_dynamic": "Ajouter le texte configuré à chaque image, indépendamment de l’option « Ombre dynamique / Rendu propre ».",
         "watermark_settings": "Paramètres du filigrane",
+        "capture_configuration_storage_failed": "Les réglages GIF sont conservés pour cette session, mais leur sauvegarde locale a échoué. Ils risquent d’être perdus à la fermeture de Blockbench.",
+        "settings_tools": "Outils",
+        "settings_render": "Rendu",
+        "settings_lighting": "Éclairage",
+        "settings_floor": "Sol",
+        "settings_advanced": "Options avancées",
+        "settings_reset_section": "Réinitialiser cette rubrique",
+        "settings_capture_defaults": "Valeurs par défaut des captures. La fenêtre GIF mémorise ses propres réglages.",
         "finish_or_cancel_the_current_gif_recording_first": "Terminez ou annulez d’abord l’enregistrement GIF en cours.",
         "choose_an_animation_available_in_this_project_before_recording": "Choisissez une animation disponible dans ce projet avant de lancer l’enregistrement.",
         "confirm": "Valider",
@@ -214,11 +219,11 @@
         light_azimuth: {name: translate('light_azimuth'), type: 'number', value: -45, min: -180, max: 180, step: 5, description: translate('light_azimuth_description')},
         light_elevation: {name: translate('light_elevation'), type: 'number', value: 45, min: 5, max: 90, step: 5, description: translate('light_elevation_description')},
         light_tone: {name: translate('light_tone'), type: 'select', value: 'neutral', options: {neutral: translate('light_neutral'), warm: translate('light_warm'), cool: translate('light_cool'), custom: translate('light_custom')}},
-        light_color: {name: translate('light_color'), type: 'click', value: '#ffffff', icon: 'palette', click: open_settings},
+        light_color: {name: translate('light_color'), type: 'click', value: '#ffffff', icon: 'palette', click: () => open_settings('lighting')},
         light_intensity: {name: translate('light_intensity'), type: 'number', value: 70, min: 0, max: 200, step: 5},
         ambient_intensity: {name: translate('ambient_intensity'), type: 'number', value: 30, min: 0, max: 200, step: 5, description: translate('ambient_description')},
         shadow_enabled: {name: translate('dynamic_shadow'), type: 'toggle', value: true, description: translate('project_the_animated_model_onto_an_invisible_wall_or_floor_using')},
-        color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: open_settings},
+        color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: () => open_settings('render')},
         opacity: {name: translate('shadow_opacity'), type: 'number', value: 35, min: 0, max: 100, step: 1, description: translate('partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain')},
         softness: {name: translate('shadow_softness'), type: 'number', value: 0, min: 0, max: 12, step: 0.25, description: translate('shadow_map_filter_radius_zero_produces_a_sharp_shadow')},
         surface: {name: translate('shadow_surface'), type: 'select', value: 'wall', options: {wall: translate('automatic_wall_behind_the_model'), floor: translate('floor_below_the_model')}},
@@ -231,8 +236,8 @@
         floor_width: {name: translate('floor_width'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
         floor_depth: {name: translate('floor_depth'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
         floor_tile_size: {name: translate('floor_tile_size'), type: 'number', value: 1, min: 0.25, max: 8, step: 0.25},
-        floor_color: {name: translate('floor_color'), type: 'click', value: '#777c86', icon: 'palette', click: open_settings},
-        floor_seam_color: {name: translate('floor_seam_color'), type: 'click', value: '#555a63', icon: 'palette', click: open_settings},
+        floor_color: {name: translate('floor_color'), type: 'click', value: '#777c86', icon: 'palette', click: () => open_settings('floor')},
+        floor_seam_color: {name: translate('floor_seam_color'), type: 'click', value: '#555a63', icon: 'palette', click: () => open_settings('floor')},
         floor_thickness: {name: translate('floor_thickness'), type: 'number', value: 1, min: 0, max: 16, step: 0.5},
         floor_height: {name: translate('floor_height'), type: 'number', value: 0, min: -256, max: 256, step: 1, description: translate('floor_height_description')},
         floor_offset_x: {name: translate('floor_offset_x'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
@@ -263,10 +268,24 @@
     const installed_light_fields = new Map();
     const previous_floor_fields = new Map();
     const installed_floor_fields = new Map();
+    const previous_shadow_fields = new Map();
+    const installed_shadow_fields = new Map();
+    const shadow_capture_fields = {color: 'modeler_toolkit_shadow_color', opacity: 'modeler_toolkit_shadow_opacity'};
     const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
     const lighting_keys = ['lighting_enabled', 'light_azimuth', 'light_elevation', 'light_tone', 'light_color', 'light_intensity', 'ambient_intensity'];
+    const settings_sections = {
+        tools: {label: translate('settings_tools'), icon: 'handyman'},
+        render: {label: translate('settings_render'), icon: 'wb_shade'},
+        lighting: {label: translate('settings_lighting'), icon: 'light_mode'},
+        floor: {label: translate('settings_floor'), icon: 'grid_on'},
+        watermark: {label: translate('watermark'), icon: 'text_fields'}
+    };
     const light_colors = {neutral: '#ffffff', warm: '#ffdab2', cool: '#b9d7ff'};
     const animation_choices = new WeakMap();
+    const capture_configuration_key = 'modeler_toolkit_capture_configuration';
+    let capture_configuration = null;
+    let restoring_capture_configuration = false;
+    let capture_storage_error_reported = false;
     let active_session = null;
     let pending_preview = null;
     let settings_dialog = null;
@@ -275,6 +294,8 @@
     let previous_create_gif;
     let previous_confirm;
     let previous_open;
+    let previous_form_change;
+    let previous_button;
     let previous_field;
     let previous_play_field;
     let previous_animation_field;
@@ -287,6 +308,8 @@
     let wrapped_create_gif;
     let wrapped_confirm;
     let wrapped_open;
+    let wrapped_form_change;
+    let wrapped_button;
     let tools_menu;
     let font_scan = null;
     let font_process = null;
@@ -1523,6 +1546,27 @@
         return open_settings('watermark');
     }
 
+    function settings_section(key) {
+        if (module_keys.has(key)) return 'tools';
+        if (lighting_keys.includes(key)) return 'lighting';
+        if (key.startsWith('floor_')) return 'floor';
+        if (key.startsWith('watermark_')) return 'watermark';
+        return 'render';
+    }
+
+    function settings_field_visible(key, values, section) {
+        if (settings_section(key) !== section) return false;
+        if (key === 'atlas_power') return !!values.atlas;
+        if (lighting_keys.includes(key)) return lighting_field_visible(key, values);
+        if (key.startsWith('floor_')) return key === 'floor_enabled' || floor_field_visible(key, values);
+        if (section !== 'render' || ['enabled', 'shadow_enabled'].includes(key)) return true;
+        if (!values.shadow_enabled) return false;
+        if (['gap', 'resolution', 'light_x', 'light_y'].includes(key) && !values.advanced_render) return false;
+        if (['light_x', 'light_y'].includes(key) && values.lighting_enabled) return false;
+        if (['surface', 'gap'].includes(key) && values.floor_enabled) return false;
+        return true;
+    }
+
     async function open_settings(section) {
         const generation = lifecycle;
         const pending_fonts = refresh_installed_fonts();
@@ -1530,16 +1574,15 @@
         if (!plugin_loaded || generation !== lifecycle) return;
         if (settings_dialog) settings_dialog.hide().delete();
         const values = read_values();
-        const form = section === 'watermark' ? {} : {modules_heading: {type: 'info', text: translate('available_tools')}};
+        const watermark_only = section === 'watermark';
+        let selected_section = Object.hasOwn(settings_sections, section) ? section : 'tools';
+        const form = watermark_only ? {} : {
+            capture_defaults: {type: 'info', text: translate('settings_capture_defaults'), condition: () => ['render', 'lighting', 'floor'].includes(selected_section)}
+        };
         ordered_settings().forEach(([key, definition]) => {
-            if (section === 'watermark' && !key.startsWith('watermark_')) return;
-            if (key === 'enabled') {
-                form.render_separator = '_';
-                form.information = {type: 'info', text: translate('gif_render_the_invisible_wall_or_floor_only_receives_the_shadow')};
-            }
+            if (watermark_only && !key.startsWith('watermark_')) return;
             if (key === 'watermark_text') {
-                if (section !== 'watermark') form.watermark_separator = '_';
-                if (font_error) form.watermark_information = {type: 'info', text: translate('the_installed_font_list_is_unavailable_reopen_settings_after_all')};
+                if (font_error) form.watermark_information = {type: 'info', text: translate('the_installed_font_list_is_unavailable_reopen_settings_after_all'), condition: () => selected_section === 'watermark'};
             }
             form[key] = {
                 label: definition.name,
@@ -1550,46 +1593,57 @@
                 min: definition.min,
                 max: definition.max,
                 step: definition.step,
-                condition: lighting_keys.includes(key) ? values => lighting_field_visible(key, values)
-                    : ['light_x', 'light_y'].includes(key) ? values => !values.lighting_enabled
-                    : key.startsWith('floor_') && key !== 'floor_enabled' ? values => floor_field_visible(key, values) : undefined
+                condition: values => settings_field_visible(key, values, selected_section)
             };
         });
+        if (!watermark_only) form.advanced_render = {type: 'checkbox', label: translate('settings_advanced'), value: false, condition: values => selected_section === 'render' && values.shadow_enabled};
         form.actions = {
             type: 'buttons',
-            buttons: [translate('preview'), translate('reset_to_defaults')],
-            async click(index) {
-                if (index === 0) {
-                    const return_dialog = settings_dialog;
-                    const options = read_values(return_dialog.getFormResult());
-                    return_dialog.hide();
-                    const data_url = await render_preview(options);
-                    if (data_url && settings_dialog === return_dialog) {
-                        const preview_image = await create_preview_image(data_url);
-                        preview_dialog = new Dialog({
-                            id: 'modeler_toolkit_preview',
-                            title: translate('preview_gif_render'),
-                            width: preview_image.width + 40,
-                            lines: [preview_image],
-                            buttons: [translate('back_to_settings')],
-                            onButton() {
-                                this.delete();
-                                preview_dialog = null;
-                                queueMicrotask(() => {
-                                    if (settings_dialog === return_dialog) return_dialog.show();
-                                });
-                            }
-                        }).show();
-                    } else if (settings_dialog === return_dialog) return_dialog.show();
-                } else {
-                    settings_dialog.setFormValues(Object.fromEntries(Object.entries(setting_definitions).map(([key, definition]) => [key, definition.value])));
-                }
+            buttons: [translate('preview')],
+            condition: () => selected_section !== 'tools',
+            async click() {
+                const return_dialog = settings_dialog;
+                const options = read_values(return_dialog.getFormResult());
+                return_dialog.hide();
+                const data_url = await render_preview(options);
+                if (data_url && settings_dialog === return_dialog) {
+                    const preview_image = await create_preview_image(data_url);
+                    preview_dialog = new Dialog({
+                        id: 'modeler_toolkit_preview',
+                        title: translate('preview_gif_render'),
+                        width: preview_image.width + 40,
+                        lines: [preview_image],
+                        buttons: [translate('back_to_settings')],
+                        onButton() {
+                            this.delete();
+                            preview_dialog = null;
+                            queueMicrotask(() => {
+                                if (settings_dialog === return_dialog) return_dialog.show();
+                            });
+                        }
+                    }).show();
+                } else if (settings_dialog === return_dialog) return_dialog.show();
+            }
+        };
+        form.reset_section = {
+            type: 'buttons',
+            buttons: [translate('settings_reset_section')],
+            click() {
+                settings_dialog.setFormValues(Object.fromEntries(Object.entries(setting_definitions).filter(([key]) => settings_section(key) === selected_section).map(([key, definition]) => [key, definition.value])));
             }
         };
         settings_dialog = new Dialog({
             id: 'modeler_toolkit_settings',
             title: section === 'watermark' ? translate('modeler_toolkit_watermark') : translate('modeler_toolkit_settings'),
-            width: 600,
+            width: watermark_only ? 600 : 740,
+            sidebar: watermark_only ? undefined : {
+                pages: settings_sections,
+                page: selected_section,
+                onPageSwitch(page) {
+                    selected_section = page;
+                    settings_dialog.form.updateValues({cause: 'setup'});
+                }
+            },
             form,
             buttons: [translate('confirm'), translate('cancel')],
             onConfirm(form_data) {
@@ -1606,13 +1660,74 @@
         }).show();
     }
 
-    function capture_form() {
+    function capture_form(include_disabled = false) {
         const form = Screencam.gif_options_dialog.form;
         if (!form?.buildForm) return null;
+        const values = include_disabled ? Object.fromEntries(Object.entries(form.form_data).map(([key, field]) => [key, field.getValue()])) : form.getResult();
         return {
-            values: Object.fromEntries(Object.entries(form.getResult()).map(([key, value]) => [key, value?.toHex8String ? value.toHex8String() : value])),
+            values: Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value?.toHex8String ? value.toHex8String() : value])),
             toggles: Object.fromEntries(Object.entries(form.form_data).filter(([, field]) => field.input_toggle).map(([key, field]) => [key, field.input_toggle.checked]))
         };
+    }
+
+    function normalize_capture_configuration(state) {
+        if (!state || state.version !== 1 || !state.values || typeof state.values !== 'object') return null;
+        const values = {};
+        const toggles = {};
+        Object.entries(Screencam.gif_options_dialog.form_config).forEach(([key, field]) => {
+            if (!field || typeof field !== 'object' || key === animation_field) return;
+            const value = state.values[key];
+            if (field.type === 'checkbox' && typeof value === 'boolean') values[key] = value;
+            if (['number', 'range'].includes(field.type) && Number.isFinite(value)) values[key] = Math.min(field.max ?? Infinity, Math.max(field.min ?? -Infinity, value));
+            if (field.type === 'vector' && Array.isArray(value) && value.length === (field.dimensions || 3) && value.every(Number.isFinite)) values[key] = value.slice();
+            if (field.type === 'color' && typeof value === 'string' && tinycolor(value).isValid()) values[key] = tinycolor(value).toHex8String();
+            if (['text', 'textarea', 'file'].includes(field.type) && typeof value === 'string' && !value.startsWith('blob:')) values[key] = value;
+            if (field.type === 'select' && typeof value === 'string') {
+                const options = typeof field.options === 'function' ? field.options() : field.options;
+                if (options && Object.hasOwn(options, value)) values[key] = value;
+            }
+            if (field.toggle_enabled && typeof state.toggles?.[key] === 'boolean') toggles[key] = state.toggles[key];
+        });
+        const animation = state.animation && typeof state.animation.uuid === 'string' && typeof state.animation.name === 'string' ? {uuid: state.animation.uuid, name: state.animation.name} : undefined;
+        return Object.keys(values).length ? {version: 1, values, toggles, animation} : null;
+    }
+
+    function load_capture_configuration() {
+        try {
+            return normalize_capture_configuration(JSON.parse(localStorage.getItem(capture_configuration_key) || 'null'));
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function save_capture_configuration() {
+        if (!plugin_loaded || restoring_capture_configuration) return;
+        const form_state = capture_form(true);
+        if (!form_state) return;
+        const animations = capture_animations();
+        const animation = animations.find(item => item.uuid === form_state.values[animation_field]);
+        if (!animations.length && typeof capture_configuration?.values.play === 'boolean') form_state.values.play = capture_configuration.values.play;
+        const state = normalize_capture_configuration({version: 1, ...form_state, animation: animation ? {uuid: animation.uuid, name: animation.name} : capture_configuration?.animation});
+        if (!state) return;
+        if (animation && Project) animation_choices.set(Project, animation.uuid);
+        capture_configuration = state;
+        try {
+            const serialized = JSON.stringify(state);
+            if (localStorage.getItem(capture_configuration_key) !== serialized) localStorage.setItem(capture_configuration_key, serialized);
+            capture_storage_error_reported = false;
+        } catch (error) {
+            if (!capture_storage_error_reported) Blockbench.showQuickMessage(translate('capture_configuration_storage_failed'), 6000);
+            capture_storage_error_reported = true;
+        }
+    }
+
+    function restore_capture_configuration(dialog) {
+        if (!capture_configuration || !dialog.form) return;
+        const state = normalize_capture_configuration(capture_configuration);
+        if (!state) return;
+        dialog.setFormValues(state.values, false);
+        dialog.form.setToggles(state.toggles, false);
+        dialog.form.updateValues({cause: 'setup'});
     }
 
     function rebuild_form(state) {
@@ -1704,9 +1819,30 @@
 
     function capture_render_values(options) {
         const overrides = Object.fromEntries([...floor_keys, ...lighting_keys].map(key => [key, options[plugin_id + '_' + key]]));
+        Object.entries(shadow_capture_fields).forEach(([key, field]) => overrides[key] = options[field]);
         const values = read_values(overrides);
         const render_enabled = options[export_field] ?? values.enabled;
         return {...values, ...capture_light_values(options, values), clean_uv: !!render_enabled, shadow_enabled: (render_enabled || values.floor_enabled || values.lighting_enabled) && values.shadow_enabled, watermark_enabled: options[watermark_field] ?? false};
+    }
+
+    function setup_shadow_fields() {
+        const values = read_values();
+        Object.entries(shadow_capture_fields).forEach(([key, field]) => {
+            const definition = setting_definitions[key];
+            const installed = {
+                label: definition.name,
+                type: key === 'color' ? 'color' : 'number',
+                value: values[key],
+                min: definition.min,
+                max: definition.max,
+                step: definition.step,
+                description: key === 'opacity' ? definition.description : undefined,
+                condition: form => !!plugin_settings.shadow_enabled.value && !!(form[export_field] || form[plugin_id + '_floor_enabled'] || form[plugin_id + '_lighting_enabled'])
+            };
+            previous_shadow_fields.set(field, Screencam.gif_options_dialog.form_config[field]);
+            installed_shadow_fields.set(field, installed);
+            Screencam.gif_options_dialog.form_config[field] = installed;
+        });
     }
 
     function setup_floor_fields() {
@@ -1735,6 +1871,7 @@
                     return;
                 }
                 const recording_dialog = Screencam.gif_options_dialog;
+                save_capture_configuration();
                 const form_state = capture_form();
                 const project = Project;
                 const return_to_recording = () => {
@@ -1773,10 +1910,14 @@
         });
     }
 
-    function update_animation_fields(dialog) {
+    function update_animation_fields(dialog, remembered_animation) {
         const animations = capture_animations();
-        const current = Project && (animation_choices.get(Project) || dialog.getFormResult()?.[animation_field]);
-        const selected = animations.find(animation => animation.uuid === current) || animations.find(animation => animation === Animation.selected) || animations[0];
+        const current = Project && animation_choices.get(Project);
+        const selected = animations.find(animation => animation.uuid === current)
+            || animations.find(animation => animation.uuid === remembered_animation?.uuid)
+            || animations.find(animation => animation.name === remembered_animation?.name)
+            || animations.find(animation => animation.uuid === dialog.getFormResult()?.[animation_field])
+            || animations.find(animation => animation === Animation.selected) || animations[0];
         const values = {[animation_field]: selected?.uuid || ''};
         if (!animations.length) values.play = false;
         dialog.setFormValues(values);
@@ -2572,6 +2713,7 @@
 
     async function render_preview(options = read_values()) {
         if (!Screencam.gif_options_dialog.form) Screencam.gif_options_dialog.build();
+        if (Dialog.open !== Screencam.gif_options_dialog) wrapped_open.call(Screencam.gif_options_dialog);
         return render_recording_preview(Screencam.gif_options_dialog.getFormResult(), {...options, clean_uv: options.clean_uv ?? !!options.enabled, watermark_enabled: options.watermark_enabled ?? true});
     }
 
@@ -2582,7 +2724,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.6.1',
+        version: '3.6.3',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -2598,7 +2740,8 @@
             } catch (error) {
                 localStorage.removeItem('modeler_toolkit_font_families');
             }
-            const form_state = capture_form();
+            const form_state = capture_form(true);
+            const form_was_open = Dialog.open === Screencam.gif_options_dialog;
             ordered_settings().forEach(([key, definition]) => {
                 plugin_settings[key] = new Setting(plugin_id + '_' + key, {...definition, plugin: plugin_id, category: 'export', onChange: refresh_tools});
             });
@@ -2609,6 +2752,7 @@
                 value: read_values().enabled,
                 description: translate('use_modeler_toolkit_render_settings_for_this_export')
             };
+            setup_shadow_fields();
             previous_watermark_field = Screencam.gif_options_dialog.form_config[watermark_field];
             previous_watermark_settings_field = Screencam.gif_options_dialog.form_config[watermark_settings_field];
             installed_watermark_field = {
@@ -2627,17 +2771,40 @@
             setup_floor_fields();
             setup_light_fields();
             setup_animation_fields();
+            capture_configuration = load_capture_configuration();
             previous_open = Screencam.gif_options_dialog.onOpen;
             wrapped_open = function(...args) {
-                const result = previous_open?.apply(this, args);
-                const values = read_values();
-                this.setFormValues({[export_field]: values.enabled, ...Object.fromEntries(lighting_keys.map(key => [plugin_id + '_' + key, values[key]]))});
-                update_animation_fields(this);
-                return result;
+                restoring_capture_configuration = true;
+                try {
+                    const result = previous_open?.apply(this, args);
+                    if (capture_configuration) restore_capture_configuration(this);
+                    else {
+                        const values = read_values();
+                        this.setFormValues({[export_field]: values.enabled, ...Object.fromEntries(lighting_keys.map(key => [plugin_id + '_' + key, values[key]]))});
+                    }
+                    update_animation_fields(this, capture_configuration?.animation);
+                    return result;
+                } finally {
+                    restoring_capture_configuration = false;
+                }
             };
             Screencam.gif_options_dialog.onOpen = wrapped_open;
+            previous_form_change = Screencam.gif_options_dialog.onFormChange;
+            wrapped_form_change = function(...args) {
+                const result = previous_form_change?.apply(this, args);
+                if (Dialog.open === this) save_capture_configuration();
+                return result;
+            };
+            Screencam.gif_options_dialog.onFormChange = wrapped_form_change;
+            previous_button = Screencam.gif_options_dialog.onButton;
+            wrapped_button = function(...args) {
+                save_capture_configuration();
+                return previous_button?.apply(this, args);
+            };
+            Screencam.gif_options_dialog.onButton = wrapped_button;
             previous_confirm = Screencam.gif_options_dialog.onConfirm;
             wrapped_confirm = function(form_data) {
+                save_capture_configuration();
                 if (Project && form_data[animation_field]) animation_choices.set(Project, form_data[animation_field]);
                 return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] || form_data[plugin_id + '_lighting_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
             };
@@ -2697,25 +2864,36 @@
                 condition: () => !!Project,
                 async click() {
                     if (!Screencam.gif_options_dialog.form) Screencam.gif_options_dialog.build();
+                    if (Dialog.open !== Screencam.gif_options_dialog) wrapped_open.call(Screencam.gif_options_dialog);
                     await Screencam.gif_options_dialog.form_config[plugin_id + '_capture_preview'].click();
                 }
             });
             setup_tool_modules();
             Blockbench.on('unselect_project', abort_recording);
             Blockbench.on('close_project', abort_recording);
-            rebuild_form(form_state);
+            restoring_capture_configuration = true;
+            try {
+                rebuild_form(form_state);
+                if (!form_was_open) restore_capture_configuration(Screencam.gif_options_dialog);
+            } finally {
+                restoring_capture_configuration = false;
+            }
+            if (form_was_open || form_state && !capture_configuration) save_capture_configuration();
         },
         onunload() {
+            if (Dialog.open === Screencam.gif_options_dialog) save_capture_configuration();
             plugin_loaded = false;
             lifecycle++;
             font_process?.kill();
             font_process = null;
             abort_recording();
             pending_preview?.finish(null);
-            const form_state = capture_form();
+            const form_state = capture_form(true);
             if (Screencam.createGif === wrapped_create_gif) Screencam.createGif = previous_create_gif;
             if (Screencam.gif_options_dialog.onConfirm === wrapped_confirm) Screencam.gif_options_dialog.onConfirm = previous_confirm;
             if (Screencam.gif_options_dialog.onOpen === wrapped_open) Screencam.gif_options_dialog.onOpen = previous_open;
+            if (Screencam.gif_options_dialog.onFormChange === wrapped_form_change) Screencam.gif_options_dialog.onFormChange = previous_form_change;
+            if (Screencam.gif_options_dialog.onButton === wrapped_button) Screencam.gif_options_dialog.onButton = previous_button;
             if (previous_field === undefined) delete Screencam.gif_options_dialog.form_config[export_field];
             else Screencam.gif_options_dialog.form_config[export_field] = previous_field;
             if (Screencam.gif_options_dialog.form_config.play === installed_play_field) Screencam.gif_options_dialog.form_config.play = previous_play_field;
@@ -2739,6 +2917,14 @@
             });
             installed_light_fields.clear();
             previous_light_fields.clear();
+            installed_shadow_fields.forEach((field, key) => {
+                if (Screencam.gif_options_dialog.form_config[key] !== field) return;
+                const previous = previous_shadow_fields.get(key);
+                if (previous === undefined) delete Screencam.gif_options_dialog.form_config[key];
+                else Screencam.gif_options_dialog.form_config[key] = previous;
+            });
+            installed_shadow_fields.clear();
+            previous_shadow_fields.clear();
             installed_floor_fields.forEach((field, key) => {
                 if (Screencam.gif_options_dialog.form_config[key] !== field) return;
                 const previous = previous_floor_fields.get(key);

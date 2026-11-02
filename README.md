@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
 
-Version actuelle : **3.6.1**.
+Version actuelle : **3.6.3**.
 
 ## Installation
 
@@ -27,7 +27,7 @@ Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/M
 | **Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
 | **Créer des contours** | Ajoute une enveloppe agrandie avec des faces inversées autour de la sélection pour produire un contour visible. L’épaisseur et la couleur ou la texture sont réglables. Les objets créés sont nommés `<name>_outline`. |
 | **Aperçu du rendu GIF** | Affiche une image fixe du rendu avec les réglages actuels : dimensions, cadrage, zoom, fond, éclairage, sol, ombre et filigrane. Si une animation est sélectionnée, l’image montre sa première pose. |
-| **Paramètres de Modeler Toolkit** | Configure les modules disponibles, l’optimisation, l’éclairage, les ombres, le sol et le filigrane. Permet aussi de rétablir les valeurs par défaut. |
+| **Paramètres de Modeler Toolkit** | Cinq rubriques : Outils, Rendu, Éclairage, Sol et Filigrane. Affiche uniquement les réglages utiles aux options activées. Les réglages techniques de l’ombre sont rangés dans « Options avancées ». La réinitialisation concerne uniquement la rubrique affichée. |
 | **Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`. Un second clic rétablit leur visibilité précédente. |
 
 Le bouton de calques agit sur la hiérarchie du modèle, pas sur les calques de peinture des textures. Il reste accessible depuis la barre d’outils de la hiérarchie. Son raccourci peut être configuré dans les préférences de Blockbench.
@@ -56,9 +56,13 @@ Un changement de géométrie, de textures, de format ou de résolution UV peut r
 
 Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
 
+La dernière configuration de cette fenêtre est mémorisée automatiquement sur cet appareil, dès que vous modifiez un réglage ou fermez la fenêtre. Elle est retrouvée après fermeture et réouverture de Blockbench : format, durée, FPS, dimensions, zoom, fond, rotation, sol, lumière, rendu propre et activation du filigrane. Les cases cochées et les valeurs des options désactivées sont conservées. Le fichier choisi comme image de fond doit rester accessible au même emplacement. L’animation choisie est retrouvée par son identifiant ou son nom lorsqu’elle existe dans le modèle ouvert ; sinon, une animation disponible est proposée. Ces préférences locales ne modifient pas les modèles et ne sont pas incluses dans les exports. Les valeurs par défaut des paramètres servent lorsqu’aucune configuration de capture n’a encore été mémorisée.
+
 L’option **Ombre dynamique / Rendu propre** applique un léger retrait des bords UV pendant le dessin pour limiter les bavures de pixels voisins. Ce nettoyage fonctionne avec ou sans filigrane, dans le cadre de capture, l’aperçu fixe et les exports. Il respecte les UV par face, les boîtes UV, les rotations, les miroirs et les images des textures animées. Seules les coordonnées d’affichage sont ajustées temporairement puis restaurées après chaque image, même en cas d’erreur : les UV du modèle, les textures et les sauvegardes restent intacts.
 
 L’ombre dynamique est calculée à partir du modèle animé et projetée sur un mur ou un sol invisible, ou sur le sol visible de rendu. Sa couleur, son opacité, sa netteté et la direction de la lumière sont réglables.
+
+**Couleur de l’ombre** et **Opacité de l’ombre (%)** se règlent directement dans la fenêtre GIF, sous **Ombre dynamique / Rendu propre**. Ces valeurs s’appliquent au cadre de capture, à l’aperçu et à l’export, et sont mémorisées avec la configuration de capture. Elles ne remplacent pas les valeurs par défaut enregistrées dans les paramètres du plugin.
 
 Activez **Éclairage personnalisé** dans la fenêtre GIF pour éclairer le modèle et le sol. Les valeurs par défaut se règlent aussi dans **Paramètres de Modeler Toolkit**.
 
