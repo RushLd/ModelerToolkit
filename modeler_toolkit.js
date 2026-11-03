@@ -1,6 +1,8 @@
 (function() {
     const plugin_id = 'modeler_toolkit';
-    const messages = {
+    const french_messages = {
+        "language": "Langue / Language",
+        "language_description": "Langue de Modeler Toolkit uniquement. Le choix est enregistré sur cet appareil après validation, sans changer la langue de Blockbench.",
         "lighting_enabled": "Éclairage personnalisé",
         "lighting_description": "Éclairer temporairement le modèle et le sol avec les mêmes réglages dans l’aperçu et l’export.",
         "light_azimuth": "Direction de la lumière (°)",
@@ -90,7 +92,7 @@
         "enable_outlines": "Activer les contours",
         "create_outline_shells_named_name_outline": "Créer des enveloppes de contour nommées <nom>_outline.",
         "enable_layer_controls": "Activer les outils de calques",
-        "toggle_or_isolate_elements_and_groups_containing_layer": "Afficher, masquer ou isoler les éléments et groupes dont le nom contient _layer.",
+        "toggle_or_isolate_elements_and_groups_containing_layer": "Afficher ou masquer les éléments et groupes dont le nom contient _layer.",
         "plugin_settings": "Paramètres du plugin",
         "top": "En haut",
         "left": "À gauche",
@@ -203,57 +205,272 @@
         "technical_error": "Une erreur technique est survenue. Les détails sont disponibles dans la console de Blockbench."
     };
 
+    const english_messages = {
+        "language": "Language / Langue",
+        "language_description": "Language for Modeler Toolkit only. Your choice is saved on this device after confirmation without changing the Blockbench language.",
+        "lighting_enabled": "Custom lighting",
+        "lighting_description": "Temporarily light the model and floor with matching settings in the preview and export.",
+        "light_azimuth": "Light direction (°)",
+        "light_azimuth_description": "0°: from the camera; -90°: left; 90°: right; 180°: behind. The direction stays fixed during capture.",
+        "light_elevation": "Light elevation (°)",
+        "light_elevation_description": "5°: grazing light; 90°: light directly above the model.",
+        "light_tone": "Light tint",
+        "light_neutral": "Neutral",
+        "light_warm": "Warm",
+        "light_cool": "Cool",
+        "light_custom": "Custom color",
+        "light_color": "Light color",
+        "light_intensity": "Light intensity (%)",
+        "ambient_intensity": "Ambient light (%)",
+        "ambient_description": "Neutral lighting for less exposed faces. At 0%, only the directional light illuminates the model.",
+        "capture_floor": "Render floor",
+        "capture_floor_description": "Add a temporary floor that receives the configured shadow. One block equals 16 model units.",
+        "floor_style": "Floor appearance",
+        "floor_tiles": "Tiles",
+        "floor_solid": "Solid",
+        "floor_width": "Floor width (blocks)",
+        "floor_depth": "Floor depth (blocks)",
+        "floor_tile_size": "Tile size (blocks)",
+        "floor_color": "Floor color",
+        "floor_seam_color": "Seam color",
+        "floor_thickness": "Floor thickness (units)",
+        "floor_height": "Floor vertical offset (units)",
+        "floor_height_description": "Relative to the bottom of the model in the first frame. The floor stays fixed throughout the recording.",
+        "floor_offset_x": "Floor X offset (units)",
+        "floor_offset_z": "Floor Z offset (units)",
+        "back_to_recording": "Back to recording",
+        "close": "Close",
+        "incompatible_backup_preserved": "This backup no longer matches the current project. It has been kept without being applied. You can optimize again using the current textures and UVs.",
+        "previous_backups_preserved": "Restoring returns to the state just before this optimization. Earlier backups remain in the project.",
+        "rebuild_textures_and_share_matching_uvs": "Rebuild textures and share matching UVs",
+        "fewer_texture_pixels": "% fewer texture pixels.",
+        "optimize_texture_and_uvs": "Optimize texture and UVs",
+        "separate_face_uvs": "Create a texture with independent UVs",
+        "separate_face_uvs_description": "Rebuild a square texture with a separate UV region for each face and 1 px of transparent spacing. Appearance, rotation and face transparency are preserved. The texture may become larger.",
+        "independent_uvs_created": "Each processed face now has its own UV region. Pixels, rotation and transparency are preserved, with 1 px of transparent spacing. No existing image file was overwritten. Use Undo or Restore original textures and UVs to go back.",
+        "independent_uvs_unavailable": "No compatible texture could be rebuilt with independent UVs. Textures and UVs have been preserved. The atlas limit is 4096 × 4096 pixels.",
+        "enable_dynamic_gif_render": "Enable dynamic GIF rendering",
+        "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": "Use dynamic rendering by default when recording a GIF, APNG or PNG sequence.",
+        "dynamic_shadow": "Dynamic shadow",
+        "project_the_animated_model_onto_an_invisible_wall_or_floor_using": "Project the animated model's shadow onto an invisible wall or floor using a shadow map.",
+        "shadow_color_tool_settings": "Shadow color",
+        "open_the_color_picker_and_all_modeler_toolkit_settings": "Choose the shadow color in the rendering settings.",
+        "shadow_opacity": "Shadow opacity (%)",
+        "partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain": "Partial opacity requires an opaque GIF background or APNG to preserve gradual transparency.",
+        "shadow_softness": "Shadow softness",
+        "shadow_map_filter_radius_zero_produces_a_sharp_shadow": "Shadow map filter radius. Zero produces a sharp shadow.",
+        "shadow_surface": "Shadow projection surface",
+        "automatic_wall_behind_the_model": "Automatic wall behind the model",
+        "floor_below_the_model": "Floor below the model",
+        "surface_distance": "Surface distance (%)",
+        "extra_distance_from_the_model_relative_to_its_size_placement_is": "Extra distance from the model, relative to its size. Placement is automatic.",
+        "light_horizontal": "Horizontal light direction (%)",
+        "negative_values_light_the_model_from_the_left_and_cast_the_shado": "Negative values light the model from the left and cast its shadow to the right.",
+        "light_vertical_direction": "Vertical light direction (%)",
+        "positive_values_light_the_model_from_above_when_using_the_wall": "Positive values light the model from above when using the wall.",
+        "shadow_map_resolution": "Shadow map resolution",
+        "watermark_text": "Watermark text",
+        "a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia": "A single line of text. Enable or disable the watermark in the GIF export window.",
+        "watermark_position": "Watermark position",
+        "bottom_center": "Bottom center",
+        "bottom_left": "Bottom left",
+        "bottom_right": "Bottom right",
+        "center_left": "Center left",
+        "center": "Center",
+        "center_right": "Center right",
+        "top_left": "Top left",
+        "top_center": "Top center",
+        "top_right": "Top right",
+        "watermark_color": "Watermark color",
+        "watermark_text_size": "Watermark text size (%)",
+        "font_size_relative_to_the_shorter_side_of_the_final_image_long_t": "Font size relative to the shorter side of the final image. Long text is automatically reduced to fit.",
+        "watermark_margin": "Watermark margin (%)",
+        "distance_from_the_final_image_edges_relative_to_its_shorter_side": "Distance from the final image edges, relative to its shorter side.",
+        "watermark_font": "Watermark font",
+        "fonts_installed_on_this_computer_including_custom_fonts": "Fonts installed on this computer, including custom fonts.",
+        "enable_texture_uv_optimization": "Enable texture and UV optimization",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild a clean square texture, share identical UV regions and reduce dimensions when possible.",
+        "power_of_two_texture_atlas": "Power of two square texture",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Use square sizes of 16, 32, 64, etc. When disabled, use multiples of 16, like the native generator without Power of two enabled.",
+        "enable_inverted_cubes": "Enable inverted cubes",
+        "create_inward_facing_copies_named_name_inverted": "Create copies with inward facing surfaces, named <name>_inverted.",
+        "enable_outlines": "Enable outlines",
+        "create_outline_shells_named_name_outline": "Create outline shells named <name>_outline.",
+        "enable_layer_controls": "Enable layer controls",
+        "toggle_or_isolate_elements_and_groups_containing_layer": "Show or hide elements and groups whose names contain _layer.",
+        "plugin_settings": "Plugin settings",
+        "top": "Top",
+        "left": "Left",
+        "front": "Front",
+        "right": "Right",
+        "bottom": "Bottom",
+        "custom_direction": "Custom direction",
+        "local_font_access_is_unavailable_allow_local_font_access_in_your": "Local font access is unavailable. Allow it in your browser.",
+        "unavailable": " (unavailable)",
+        "margin": "Margin",
+        "no_matching_original_uv_backup_exact_restoration_requires_uv_cle": "No matching original UV backup was found. Exact restoration requires having applied cleanup with Modeler Toolkit.",
+        "restore_modeler_toolkit_uvs": "Restore UVs with Modeler Toolkit",
+        "select_cubes_in_a_format_supporting_per_face_uvs": "Select cubes in a format that supports per-face UVs.",
+        "create_modeler_toolkit_inverted_cubes": "Create inverted cubes with Modeler Toolkit",
+        "create_modeler_toolkit_outlines": "Create outlines with Modeler Toolkit",
+        "the_outline_texture_is_no_longer_available": "The outline texture is no longer available.",
+        "generate_solid_color_texture": "Generate a solid color texture",
+        "this_format_needs_an_existing_front_sided_texture_for_outlines": "This format needs an existing texture with front faces only to create outlines.",
+        "create_outlines": "Create outlines",
+        "thickness": "Thickness",
+        "outline_color": "Outline color",
+        "no_elements_or_groups_containing_layer": "No elements or groups have _layer in their names.",
+        "modeler_toolkit_texture_optimization": "Modeler Toolkit - Texture optimization",
+        "box_uv_layouts_preserved": "Box UV layouts preserved",
+        "box_uv_shared_resolution_preserved": ": the shared UV resolution prevents moving this box layout without changing its appearance",
+        "box_uv_modes_preserved": "\n\nUV modes are preserved: independent faces remain independent and box UVs remain linked. Identical box layouts are shared without rotation, with 1 px of transparent spacing around each complete layout.",
+        "textures_still_loading_or_unavailable": "Textures still loading or unavailable",
+        "animated_layered_or_material_textures_preserved": "Animated, layered or material textures preserved",
+        "textures_exceeding_the_safe_comparison_size": "Textures exceeding the safe comparison size",
+        "invalid_uv_coordinates": "Invalid UV coordinates",
+        "uvs_outside_the_texture_preserved": "UVs outside the texture preserved",
+        "no_changes_were_made": "No changes were made. ",
+        "no_additional_pixel_identical_uv_regions_were_found_original_tex": "No additional UV regions with identical pixels were found. Original textures, dimensions and padding remain unchanged.",
+        "finish_the_current_edit_or_recording_before_rebuilding_textures": "Finish the current edit or recording before rebuilding textures.",
+        "layered_texture_compositing_is_active_the_texture_stack_was_pres": "Layered texture compositing is active. The texture stack has been preserved.",
+        "some_uvs_or_element_types_require_the_original_layout": ": some UVs or element types require the original layout",
+        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": ": no compatible square layout was found with the same pixels and 1 px of transparent spacing",
+        "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "No compatible square texture could be rebuilt with 1 px of transparent spacing. Original textures and UVs have been preserved. The atlas limit is 4096 × 4096 pixels.",
+        "this_format_shares_a_non_square_uv_resolution_across_several_tex": "This format shares a non-square UV resolution across multiple textures. Repacking them would change texture animation, so the original layout has been preserved.",
+        "texture_repacking_was_cancelled": "Texture repacking was cancelled. ",
+        "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions preserved: rebuilding does not require a smaller texture.",
+        "texture_grown_for_padding": "Texture enlarged to preserve all face pixels and add 1 px of transparent spacing.",
+        "transparent_faces_disabled": "Fully transparent faces made invisible: ",
+        "uv_regions": "\nUV regions: ",
+        "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nIdentical regions are shared, including rotated or mirrored matches. Only pixels used by faces are copied, with 1 px of transparent spacing around UV regions. UVs are adjusted to preserve face appearance and orientation. No image resampling or smoothing.\n\nUse Undo or Restore original textures and UVs to go back. Existing image files are not overwritten automatically.",
+        "finish_the_current_edit_or_recording_before_restoring_textures": "Finish the current edit or recording before restoring textures.",
+        "undo_the_project_format_or_uv_resolution_change_before_restoring": "Undo the project format or UV resolution change before restoring these textures.",
+        "an_optimized_texture_is_missing_or_has_a_different_resolution_un": "An optimized texture is missing or its resolution has changed. Undo its replacement before restoring.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to": "The faces or vertices of an optimized element have changed. Undo this geometry change before restoring.",
+        "new_geometry_uses_an_optimized_texture_undo_that_addition_before": "New elements use an optimized texture. Undo their addition before restoring that texture's original layout.",
+        "restore_original_square_atlas_textures_and_uvs": "Restore original square atlas textures and UVs",
+        "texture_restoration_was_cancelled": "Texture restoration was cancelled. ",
+        "original_textures_uvs_and_resolution_restored": "Original textures, UVs and resolution restored.",
+        "finish_the_current_edit_or_recording_before_restoring_uvs": "Finish the current edit or recording before restoring UVs.",
+        "undo_the_project_format_or_uv_resolution_change_before_restoring_2": "Undo the project format or UV resolution change before restoring the original UVs.",
+        "an_original_texture_is_missing_or_has_a_different_resolution_res": "An original texture is missing or its resolution has changed. Restore it before restoring these UVs.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_2": "The faces or vertices of an optimized element have changed. Undo this geometry change before restoring these UVs.",
+        "restore_original_uvs_without_changing_textures": "Restore original UVs without changing textures",
+        "uv_restoration_was_cancelled": "UV restoration was cancelled. ",
+        "original_uvs_restored_texture_images_preserved": "Original UVs restored. Texture images have been preserved.",
+        "this_project_has_no_texture_optimization_backup": "This project has no texture backup from before optimization.",
+        "the_project_format_or_uv_resolution_has_changed_undo_those_chang": "The project format or UV resolution has changed. Undo those changes before restoring the original textures.",
+        "an_optimized_element_has_different_faces_or_vertices_undo_its_to_3": "The faces or vertices of an optimized element have changed. Undo these geometry changes before restoring the original UVs.",
+        "an_original_texture_identifier_is_already_in_use_undo_the_textur": "An original texture identifier is already in use. Undo the texture replacement before restoring.",
+        "an_original_texture_path_is_already_in_use_undo_the_texture_repl": "An original texture path is already in use. Undo the texture replacement before restoring.",
+        "new_geometry_uses_the_optimized_default_texture_undo_that_additi": "New elements use the optimized default texture. Undo their addition before restoring in this single-texture format.",
+        "restore_original_textures_and_uvs": "Restore original textures and UVs",
+        "restoration_was_cancelled": "Restoration was cancelled. ",
+        "original_textures_and_uvs_restored": "Original textures and UVs restored.",
+        "restore_original_textures_uvs": "Restore original textures and UVs",
+        "restore_original_uvs": "Restore original UVs",
+        "create_inverted_cubes": "Create inverted cubes",
+        "modeler_toolkit_settings": "Modeler Toolkit settings",
+        "toggle_layers": "Show / hide layers",
+        "modeler_toolkit": "Modeler Toolkit",
+        "the_installed_font_list_is_unavailable_reopen_settings_after_all": "The installed font list is unavailable. Allow local font access, then reopen settings.",
+        "preview": "Preview",
+        "preview_gif_render": "GIF render preview",
+        "back_to_settings": "Back to settings",
+        "modeler_toolkit_watermark": "Modeler Toolkit watermark",
+        "unnamed_animation": "Unnamed animation",
+        "animation_to_record": "Animation to record",
+        "record_this_animation_from_any_editor_mode": "Record this animation from any editor mode.",
+        "shadow_light_direction": "Shadow light direction",
+        "choose_where_the_light_comes_from_for_this_export_the_shadow_pro": "Choose where the light comes from for this export. The shadow is projected in the opposite direction.",
+        "negative_light_from_the_left_positive_light_from_the_right": "Negative: light from the left. Positive: light from the right.",
+        "light_vertical_depth": "Vertical light direction / Depth (%)",
+        "negative_light_from_below_positive_light_from_above_on_a_floor_t": "Negative: light from below. Positive: light from above. On a floor, this adjusts depth.",
+        "modeler_toolkit_capture_stopped": "Modeler Toolkit recording stopped: ",
+        "open_a_model_and_finish_the_current_recording_before_previewing": "Open a model and finish the current recording before previewing.",
+        "rebuild_textures_and_uvs_create_outlines_and_record_animations_w": "Rebuild textures and UVs, create outlines and record animations with customizable shadows and a watermark.",
+        "uv_tools_outlines_layer_controls_dynamic_shadows": "UV tools, outlines, layer controls, dynamic shadows and watermark. See the repository for instructions and the MIT license.",
+        "dynamic_shadow_clean_render": "Dynamic shadow / Clean rendering",
+        "use_modeler_toolkit_render_settings_for_this_export": "Use Modeler Toolkit render settings for this export.",
+        "watermark": "Watermark",
+        "add_your_configured_text_to_every_frame_independently_of_dynamic": "Add the configured text to every frame, independently of Dynamic shadow / Clean rendering.",
+        "watermark_settings": "Watermark settings",
+        "capture_configuration_storage_failed": "GIF settings are kept for this session, but saving them locally failed. They may be lost when Blockbench closes.",
+        "settings_tools": "Tools",
+        "settings_render": "Rendering",
+        "settings_lighting": "Lighting",
+        "settings_floor": "Floor",
+        "settings_advanced": "Advanced options",
+        "settings_reset_section": "Reset this section",
+        "settings_capture_defaults": "Default capture settings. The GIF window remembers its own settings.",
+        "finish_or_cancel_the_current_gif_recording_first": "Finish or cancel the current GIF recording first.",
+        "choose_an_animation_available_in_this_project_before_recording": "Choose an animation available in this project before recording.",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "technical_error": "A technical error occurred. Details are available in the Blockbench console."
+    };
+    const translations = {fr: french_messages, en: english_messages};
+    let interface_language = Settings.stored[plugin_id + '_language']?.value === 'en' ? 'en' : 'fr';
+
     function translate(key) {
-        return messages[key];
+        return translations[interface_language][key] ?? french_messages[key] ?? key;
     }
 
     function error_message(error) {
-        if (Object.values(messages).includes(error?.message)) return error.message;
+        for (const messages of Object.values(translations)) {
+            const key = Object.keys(messages).find(key => messages[key] === error?.message);
+            if (key) return translate(key);
+        }
         console.error('[Modeler Toolkit]', error);
         return translate('technical_error');
     }
     const installed_font_options = {Arial: 'Arial'};
-    const setting_definitions = {
-        enabled: {name: translate('enable_dynamic_gif_render'), type: 'toggle', value: false, description: translate('use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or')},
-        lighting_enabled: {name: translate('lighting_enabled'), type: 'toggle', value: false, description: translate('lighting_description')},
-        light_azimuth: {name: translate('light_azimuth'), type: 'number', value: -45, min: -180, max: 180, step: 5, description: translate('light_azimuth_description')},
-        light_elevation: {name: translate('light_elevation'), type: 'number', value: 45, min: 5, max: 90, step: 5, description: translate('light_elevation_description')},
-        light_tone: {name: translate('light_tone'), type: 'select', value: 'neutral', options: {neutral: translate('light_neutral'), warm: translate('light_warm'), cool: translate('light_cool'), custom: translate('light_custom')}},
-        light_color: {name: translate('light_color'), type: 'click', value: '#ffffff', icon: 'palette', click: () => open_settings('lighting')},
-        light_intensity: {name: translate('light_intensity'), type: 'number', value: 70, min: 0, max: 200, step: 5},
-        ambient_intensity: {name: translate('ambient_intensity'), type: 'number', value: 30, min: 0, max: 200, step: 5, description: translate('ambient_description')},
-        shadow_enabled: {name: translate('dynamic_shadow'), type: 'toggle', value: true, description: translate('project_the_animated_model_onto_an_invisible_wall_or_floor_using')},
-        color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: () => open_settings('render')},
-        opacity: {name: translate('shadow_opacity'), type: 'number', value: 35, min: 0, max: 100, step: 1, description: translate('partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain')},
-        softness: {name: translate('shadow_softness'), type: 'number', value: 0, min: 0, max: 12, step: 0.25, description: translate('shadow_map_filter_radius_zero_produces_a_sharp_shadow')},
-        surface: {name: translate('shadow_surface'), type: 'select', value: 'wall', options: {wall: translate('automatic_wall_behind_the_model'), floor: translate('floor_below_the_model')}},
-        gap: {name: translate('surface_distance'), type: 'number', value: 10, min: 0, max: 200, step: 1, description: translate('extra_distance_from_the_model_relative_to_its_size_placement_is')},
-        light_x: {name: translate('light_horizontal'), type: 'number', value: -60, min: -200, max: 200, step: 5, description: translate('negative_values_light_the_model_from_the_left_and_cast_the_shado')},
-        light_y: {name: translate('light_vertical_direction'), type: 'number', value: 80, min: -200, max: 200, step: 5, description: translate('positive_values_light_the_model_from_above_when_using_the_wall')},
-        resolution: {name: translate('shadow_map_resolution'), type: 'select', value: '2048', options: {'512': '512', '1024': '1024', '2048': '2048', '4096': '4096'}},
-        floor_enabled: {name: translate('capture_floor'), type: 'toggle', value: false, description: translate('capture_floor_description')},
-        floor_style: {name: translate('floor_style'), type: 'select', value: 'tiles', options: {tiles: translate('floor_tiles'), solid: translate('floor_solid')}},
-        floor_width: {name: translate('floor_width'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
-        floor_depth: {name: translate('floor_depth'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
-        floor_tile_size: {name: translate('floor_tile_size'), type: 'number', value: 1, min: 0.25, max: 8, step: 0.25},
-        floor_color: {name: translate('floor_color'), type: 'click', value: '#777c86', icon: 'palette', click: () => open_settings('floor')},
-        floor_seam_color: {name: translate('floor_seam_color'), type: 'click', value: '#555a63', icon: 'palette', click: () => open_settings('floor')},
-        floor_thickness: {name: translate('floor_thickness'), type: 'number', value: 1, min: 0, max: 16, step: 0.5},
-        floor_height: {name: translate('floor_height'), type: 'number', value: 0, min: -256, max: 256, step: 1, description: translate('floor_height_description')},
-        floor_offset_x: {name: translate('floor_offset_x'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
-        floor_offset_z: {name: translate('floor_offset_z'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
-        watermark_text: {name: translate('watermark_text'), type: 'text', value: '', description: translate('a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia')},
-        watermark_position: {name: translate('watermark_position'), type: 'select', value: 'bottom_center', options: {bottom_center: translate('bottom_center'), bottom_left: translate('bottom_left'), bottom_right: translate('bottom_right'), center_left: translate('center_left'), center: translate('center'), center_right: translate('center_right'), top_left: translate('top_left'), top_center: translate('top_center'), top_right: translate('top_right')}},
-        watermark_color: {name: translate('watermark_color'), type: 'click', value: '#ffffff', icon: 'palette', click: open_watermark_settings},
-        watermark_size: {name: translate('watermark_text_size'), type: 'number', value: 3, min: 0.5, max: 15, step: 0.25, description: translate('font_size_relative_to_the_shorter_side_of_the_final_image_long_t')},
-        watermark_margin: {name: translate('watermark_margin'), type: 'number', value: 3, min: 0, max: 25, step: 0.5, description: translate('distance_from_the_final_image_edges_relative_to_its_shorter_side')},
-        watermark_font: {name: translate('watermark_font'), type: 'select', value: 'Arial', options: installed_font_options, description: translate('fonts_installed_on_this_computer_including_custom_fonts')},
-        atlas: {name: translate('enable_texture_uv_optimization'), type: 'toggle', value: true, description: translate('rebuild_a_clean_square_texture_share_identical_uv_regions_and_re')},
-        atlas_power: {name: translate('power_of_two_texture_atlas'), type: 'toggle', value: false, description: translate('use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of')},
-        inverted: {name: translate('enable_inverted_cubes'), type: 'toggle', value: true, description: translate('create_inward_facing_copies_named_name_inverted')},
-        outline: {name: translate('enable_outlines'), type: 'toggle', value: true, description: translate('create_outline_shells_named_name_outline')},
-        layers: {name: translate('enable_layer_controls'), type: 'toggle', value: true, description: translate('toggle_or_isolate_elements_and_groups_containing_layer')}
-    };
+    const setting_definitions = create_setting_definitions();
+
+    function create_setting_definitions() {
+        return {
+            language: {name: translate('language'), type: 'select', value: 'fr', options: {fr: 'Français', en: 'English'}, description: translate('language_description')},
+            enabled: {name: translate('enable_dynamic_gif_render'), type: 'toggle', value: false, description: translate('use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or')},
+            lighting_enabled: {name: translate('lighting_enabled'), type: 'toggle', value: false, description: translate('lighting_description')},
+            light_azimuth: {name: translate('light_azimuth'), type: 'number', value: -45, min: -180, max: 180, step: 5, description: translate('light_azimuth_description')},
+            light_elevation: {name: translate('light_elevation'), type: 'number', value: 45, min: 5, max: 90, step: 5, description: translate('light_elevation_description')},
+            light_tone: {name: translate('light_tone'), type: 'select', value: 'neutral', options: {neutral: translate('light_neutral'), warm: translate('light_warm'), cool: translate('light_cool'), custom: translate('light_custom')}},
+            light_color: {name: translate('light_color'), type: 'click', value: '#ffffff', icon: 'palette', click: () => open_settings('lighting')},
+            light_intensity: {name: translate('light_intensity'), type: 'number', value: 70, min: 0, max: 200, step: 5},
+            ambient_intensity: {name: translate('ambient_intensity'), type: 'number', value: 30, min: 0, max: 200, step: 5, description: translate('ambient_description')},
+            shadow_enabled: {name: translate('dynamic_shadow'), type: 'toggle', value: true, description: translate('project_the_animated_model_onto_an_invisible_wall_or_floor_using')},
+            color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: () => open_settings('render')},
+            opacity: {name: translate('shadow_opacity'), type: 'number', value: 35, min: 0, max: 100, step: 1, description: translate('partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain')},
+            softness: {name: translate('shadow_softness'), type: 'number', value: 0, min: 0, max: 12, step: 0.25, description: translate('shadow_map_filter_radius_zero_produces_a_sharp_shadow')},
+            surface: {name: translate('shadow_surface'), type: 'select', value: 'wall', options: {wall: translate('automatic_wall_behind_the_model'), floor: translate('floor_below_the_model')}},
+            gap: {name: translate('surface_distance'), type: 'number', value: 10, min: 0, max: 200, step: 1, description: translate('extra_distance_from_the_model_relative_to_its_size_placement_is')},
+            light_x: {name: translate('light_horizontal'), type: 'number', value: -60, min: -200, max: 200, step: 5, description: translate('negative_values_light_the_model_from_the_left_and_cast_the_shado')},
+            light_y: {name: translate('light_vertical_direction'), type: 'number', value: 80, min: -200, max: 200, step: 5, description: translate('positive_values_light_the_model_from_above_when_using_the_wall')},
+            resolution: {name: translate('shadow_map_resolution'), type: 'select', value: '2048', options: {'512': '512', '1024': '1024', '2048': '2048', '4096': '4096'}},
+            floor_enabled: {name: translate('capture_floor'), type: 'toggle', value: false, description: translate('capture_floor_description')},
+            floor_style: {name: translate('floor_style'), type: 'select', value: 'tiles', options: {tiles: translate('floor_tiles'), solid: translate('floor_solid')}},
+            floor_width: {name: translate('floor_width'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
+            floor_depth: {name: translate('floor_depth'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
+            floor_tile_size: {name: translate('floor_tile_size'), type: 'number', value: 1, min: 0.25, max: 8, step: 0.25},
+            floor_color: {name: translate('floor_color'), type: 'click', value: '#777c86', icon: 'palette', click: () => open_settings('floor')},
+            floor_seam_color: {name: translate('floor_seam_color'), type: 'click', value: '#555a63', icon: 'palette', click: () => open_settings('floor')},
+            floor_thickness: {name: translate('floor_thickness'), type: 'number', value: 1, min: 0, max: 16, step: 0.5},
+            floor_height: {name: translate('floor_height'), type: 'number', value: 0, min: -256, max: 256, step: 1, description: translate('floor_height_description')},
+            floor_offset_x: {name: translate('floor_offset_x'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
+            floor_offset_z: {name: translate('floor_offset_z'), type: 'number', value: 0, min: -1024, max: 1024, step: 1},
+            watermark_text: {name: translate('watermark_text'), type: 'text', value: '', description: translate('a_single_line_of_text_enable_or_disable_it_in_the_gif_export_dia')},
+            watermark_position: {name: translate('watermark_position'), type: 'select', value: 'bottom_center', options: {bottom_center: translate('bottom_center'), bottom_left: translate('bottom_left'), bottom_right: translate('bottom_right'), center_left: translate('center_left'), center: translate('center'), center_right: translate('center_right'), top_left: translate('top_left'), top_center: translate('top_center'), top_right: translate('top_right')}},
+            watermark_color: {name: translate('watermark_color'), type: 'click', value: '#ffffff', icon: 'palette', click: open_watermark_settings},
+            watermark_size: {name: translate('watermark_text_size'), type: 'number', value: 3, min: 0.5, max: 15, step: 0.25, description: translate('font_size_relative_to_the_shorter_side_of_the_final_image_long_t')},
+            watermark_margin: {name: translate('watermark_margin'), type: 'number', value: 3, min: 0, max: 25, step: 0.5, description: translate('distance_from_the_final_image_edges_relative_to_its_shorter_side')},
+            watermark_font: {name: translate('watermark_font'), type: 'select', value: 'Arial', options: installed_font_options, description: translate('fonts_installed_on_this_computer_including_custom_fonts')},
+            atlas: {name: translate('enable_texture_uv_optimization'), type: 'toggle', value: true, description: translate('rebuild_a_clean_square_texture_share_identical_uv_regions_and_re')},
+            atlas_power: {name: translate('power_of_two_texture_atlas'), type: 'toggle', value: false, description: translate('use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of')},
+            inverted: {name: translate('enable_inverted_cubes'), type: 'toggle', value: true, description: translate('create_inward_facing_copies_named_name_inverted')},
+            outline: {name: translate('enable_outlines'), type: 'toggle', value: true, description: translate('create_outline_shells_named_name_outline')},
+            layers: {name: translate('enable_layer_controls'), type: 'toggle', value: true, description: translate('toggle_or_isolate_elements_and_groups_containing_layer')}
+        };
+    }
     const plugin_settings = {};
     const module_keys = new Set(['atlas', 'atlas_power', 'inverted', 'outline', 'layers']);
     const export_field = 'dynamic_render_enabled';
@@ -263,7 +480,11 @@
     const light_field = 'modeler_toolkit_light_direction';
     const light_x_field = 'modeler_toolkit_light_x';
     const light_y_field = 'modeler_toolkit_light_y';
-    const light_presets = {settings: {name: translate('plugin_settings')}, top_left: {name: translate('top_left'), x: -60, y: 80}, top: {name: translate('top'), x: 0, y: 100}, top_right: {name: translate('top_right'), x: 60, y: 80}, left: {name: translate('left'), x: -100, y: 0}, front: {name: translate('front'), x: 0, y: 0}, right: {name: translate('right'), x: 100, y: 0}, bottom_left: {name: translate('bottom_left'), x: -60, y: -80}, bottom: {name: translate('bottom'), x: 0, y: -100}, bottom_right: {name: translate('bottom_right'), x: 60, y: -80}, custom: {name: translate('custom_direction')}};
+    const light_presets = create_light_presets();
+
+    function create_light_presets() {
+        return {settings: {name: translate('plugin_settings')}, top_left: {name: translate('top_left'), x: -60, y: 80}, top: {name: translate('top'), x: 0, y: 100}, top_right: {name: translate('top_right'), x: 60, y: 80}, left: {name: translate('left'), x: -100, y: 0}, front: {name: translate('front'), x: 0, y: 0}, right: {name: translate('right'), x: 100, y: 0}, bottom_left: {name: translate('bottom_left'), x: -60, y: -80}, bottom: {name: translate('bottom'), x: 0, y: -100}, bottom_right: {name: translate('bottom_right'), x: 60, y: -80}, custom: {name: translate('custom_direction')}};
+    }
     const previous_light_fields = new Map();
     const installed_light_fields = new Map();
     const previous_floor_fields = new Map();
@@ -273,13 +494,17 @@
     const shadow_capture_fields = {color: 'modeler_toolkit_shadow_color', opacity: 'modeler_toolkit_shadow_opacity'};
     const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
     const lighting_keys = ['lighting_enabled', 'light_azimuth', 'light_elevation', 'light_tone', 'light_color', 'light_intensity', 'ambient_intensity'];
-    const settings_sections = {
-        tools: {label: translate('settings_tools'), icon: 'handyman'},
-        render: {label: translate('settings_render'), icon: 'wb_shade'},
-        lighting: {label: translate('settings_lighting'), icon: 'light_mode'},
-        floor: {label: translate('settings_floor'), icon: 'grid_on'},
-        watermark: {label: translate('watermark'), icon: 'text_fields'}
-    };
+    const settings_sections = create_settings_sections();
+
+    function create_settings_sections() {
+        return {
+            tools: {label: translate('settings_tools'), icon: 'handyman'},
+            render: {label: translate('settings_render'), icon: 'wb_shade'},
+            lighting: {label: translate('settings_lighting'), icon: 'light_mode'},
+            floor: {label: translate('settings_floor'), icon: 'grid_on'},
+            watermark: {label: translate('watermark'), icon: 'text_fields'}
+        };
+    }
     const light_colors = {neutral: '#ffffff', warm: '#ffdab2', cool: '#b9d7ff'};
     const animation_choices = new WeakMap();
     const capture_configuration_key = 'modeler_toolkit_capture_configuration';
@@ -329,7 +554,63 @@
     }
 
     function ordered_settings() {
-        return Object.entries(setting_definitions).sort(([first], [second]) => Number(module_keys.has(second)) - Number(module_keys.has(first)));
+        const priority = key => key === 'language' ? 2 : Number(module_keys.has(key));
+        return Object.entries(setting_definitions).sort(([first], [second]) => priority(second) - priority(first));
+    }
+
+    function update_field_labels(field, definition) {
+        if (!field) return;
+        for (const key of ['label', 'description', 'options', 'buttons']) {
+            if (Object.hasOwn(definition, key)) field[key] = definition[key];
+        }
+    }
+
+    function change_language(value) {
+        const next_language = value === 'en' ? 'en' : 'fr';
+        if (interface_language === next_language) return;
+        interface_language = next_language;
+        Object.assign(setting_definitions, create_setting_definitions());
+        Object.assign(light_presets, create_light_presets());
+        Object.assign(settings_sections, create_settings_sections());
+        Object.entries(plugin_settings).forEach(([key, setting]) => {
+            const definition = setting_definitions[key];
+            setting.name = definition.name;
+            setting.description = definition.description || '';
+            if (definition.options) setting.options = definition.options;
+        });
+        tool_definitions().forEach(([id, definition]) => {
+            const action = tool_actions.find(action => action.id === id);
+            if (!action) return;
+            action.setName(definition.name);
+            action.description = definition.description || '';
+            action.menu_node.title = action.description;
+            action.nodes.forEach(node => {
+                node.querySelectorAll('.tooltip_description').forEach(label => label.textContent = action.description);
+                node.querySelectorAll('.toolbar_label').forEach(label => label.textContent = action.name);
+            });
+        });
+        preview_action?.setName(translate('preview_gif_render'));
+        const plugin = Plugins.all.find(plugin => plugin.id === plugin_id);
+        if (plugin) {
+            plugin.description = translate('rebuild_textures_and_uvs_create_outlines_and_record_animations_w');
+            plugin.about = translate('uv_tools_outlines_layer_controls_dynamic_shadows');
+        }
+        const form = Screencam.gif_options_dialog.form_config;
+        update_field_labels(form[export_field], {label: translate('dynamic_shadow_clean_render'), description: translate('use_modeler_toolkit_render_settings_for_this_export')});
+        update_field_labels(installed_watermark_field, {label: translate('watermark'), description: translate('add_your_configured_text_to_every_frame_independently_of_dynamic')});
+        update_field_labels(installed_watermark_settings_field, {buttons: [translate('watermark_settings')]});
+        update_field_labels(installed_animation_field, {label: translate('animation_to_record'), description: translate('record_this_animation_from_any_editor_mode')});
+        setup_shadow_fields(true);
+        setup_floor_fields(true);
+        setup_light_fields(true);
+        const was_restoring = restoring_capture_configuration;
+        restoring_capture_configuration = true;
+        try {
+            rebuild_form(capture_form(true));
+        } finally {
+            restoring_capture_configuration = was_restoring;
+        }
+        MenuBar.update();
     }
 
     function refresh_tools() {
@@ -1466,14 +1747,8 @@
         if (changed) toolbar.update(true).save();
     }
 
-    function setup_tool_modules() {
-        remove_toolkit_toolbar_actions();
-        [Cube, Mesh].forEach(type => uv_properties.push(new Property(type, 'object', backup_key, {default: {}, exposed: false})));
-        uv_properties.push(new Property(ModelProject, 'object', atlas_backup_key, {default: {}, exposed: false}));
-        Blockbench.on('create_undo_save', capture_atlas_undo);
-        Blockbench.on('load_undo_save', load_atlas_undo);
-        Blockbench.on('save_project', serialize_square_atlas);
-        const definitions = [
+    function tool_definitions() {
+        return [
             ['modeler_toolkit_optimize_atlas', {name: translate('optimize_texture_and_uvs'), icon: 'texture', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: () => optimize_texture_atlas()}],
             ['modeler_toolkit_separate_uv', {name: translate('separate_face_uvs'), description: translate('separate_face_uvs_description'), icon: 'grid_view', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: () => optimize_texture_atlas(true)}],
             ['modeler_toolkit_restore_atlas', {name: translate('restore_original_textures_uvs'), icon: 'restore', condition: () => module_enabled('atlas') && !!Project && [1, 2, 3].includes(Project[atlas_backup_key]?.version), click: restore_texture_atlas}],
@@ -1483,7 +1758,16 @@
             ['modeler_toolkit_settings', {name: translate('modeler_toolkit_settings'), icon: 'settings', click: open_settings}],
             ['modeler_toolkit_toggle_layers', {name: translate('toggle_layers'), icon: 'visibility_off', condition: () => module_enabled('layers') && !!Project && Outliner.elements.length > 0, click: () => toggle_layer_visibility('hide')}]
         ];
-        definitions.forEach(([id, options]) => tool_actions.push(new Action(id, {...options, category: 'edit'})));
+    }
+
+    function setup_tool_modules() {
+        remove_toolkit_toolbar_actions();
+        [Cube, Mesh].forEach(type => uv_properties.push(new Property(type, 'object', backup_key, {default: {}, exposed: false})));
+        uv_properties.push(new Property(ModelProject, 'object', atlas_backup_key, {default: {}, exposed: false}));
+        Blockbench.on('create_undo_save', capture_atlas_undo);
+        Blockbench.on('load_undo_save', load_atlas_undo);
+        Blockbench.on('save_project', serialize_square_atlas);
+        tool_definitions().forEach(([id, options]) => tool_actions.push(new Action(id, {...options, category: 'edit'})));
         const layer_actions = ['modeler_toolkit_toggle_layers'];
         layer_actions.forEach(id => {
             if (Toolbars.outliner && !Toolbars.outliner.children.some(child => (typeof child === 'string' ? child : child.id) === id)) Toolbars.outliner.add(id);
@@ -1547,6 +1831,7 @@
     }
 
     function settings_section(key) {
+        if (key === 'language') return 'personal';
         if (module_keys.has(key)) return 'tools';
         if (lighting_keys.includes(key)) return 'lighting';
         if (key.startsWith('floor_')) return 'floor';
@@ -1555,6 +1840,7 @@
     }
 
     function settings_field_visible(key, values, section) {
+        if (key === 'language') return true;
         if (settings_section(key) !== section) return false;
         if (key === 'atlas_power') return !!values.atlas;
         if (lighting_keys.includes(key)) return lighting_field_visible(key, values);
@@ -1576,9 +1862,7 @@
         const values = read_values();
         const watermark_only = section === 'watermark';
         let selected_section = Object.hasOwn(settings_sections, section) ? section : 'tools';
-        const form = watermark_only ? {} : {
-            capture_defaults: {type: 'info', text: translate('settings_capture_defaults'), condition: () => ['render', 'lighting', 'floor'].includes(selected_section)}
-        };
+        const form = {};
         ordered_settings().forEach(([key, definition]) => {
             if (watermark_only && !key.startsWith('watermark_')) return;
             if (key === 'watermark_text') {
@@ -1595,6 +1879,7 @@
                 step: definition.step,
                 condition: values => settings_field_visible(key, values, selected_section)
             };
+            if (key === 'language') form.capture_defaults = {type: 'info', text: translate('settings_capture_defaults'), condition: () => ['render', 'lighting', 'floor'].includes(selected_section)};
         });
         if (!watermark_only) form.advanced_render = {type: 'checkbox', label: translate('settings_advanced'), value: false, condition: values => selected_section === 'render' && values.shadow_enabled};
         form.actions = {
@@ -1648,10 +1933,11 @@
             buttons: [translate('confirm'), translate('cancel')],
             onConfirm(form_data) {
                 const next_values = read_values(form_data);
-                Object.keys(form_data).filter(key => plugin_settings[key]).forEach(key => plugin_settings[key].set(next_values[key]));
-                Settings.save();
                 this.hide().delete();
                 settings_dialog = null;
+                Object.keys(form_data).filter(key => key !== 'language' && plugin_settings[key]).forEach(key => plugin_settings[key].set(next_values[key]));
+                if (Object.hasOwn(form_data, 'language')) plugin_settings.language.set(next_values.language);
+                Settings.save();
             },
             onCancel() {
                 this.hide().delete();
@@ -1767,7 +2053,7 @@
         });
     }
 
-    function setup_light_fields() {
+    function setup_light_fields(labels_only = false) {
         const values = read_values();
         const visible = form => !form[plugin_id + '_lighting_enabled'] && (!!form[export_field] || !!form[plugin_id + '_floor_enabled']) && !!plugin_settings.shadow_enabled.value;
         const custom = form => visible(form) && form[light_field] === 'custom';
@@ -1791,6 +2077,7 @@
             };
         });
         Object.entries(definitions).forEach(([key, field]) => {
+            if (labels_only) return update_field_labels(installed_light_fields.get(key), field);
             previous_light_fields.set(key, Screencam.gif_options_dialog.form_config[key]);
             installed_light_fields.set(key, field);
             Screencam.gif_options_dialog.form_config[key] = field;
@@ -1825,7 +2112,7 @@
         return {...values, ...capture_light_values(options, values), clean_uv: !!render_enabled, shadow_enabled: (render_enabled || values.floor_enabled || values.lighting_enabled) && values.shadow_enabled, watermark_enabled: options[watermark_field] ?? false};
     }
 
-    function setup_shadow_fields() {
+    function setup_shadow_fields(labels_only = false) {
         const values = read_values();
         Object.entries(shadow_capture_fields).forEach(([key, field]) => {
             const definition = setting_definitions[key];
@@ -1839,13 +2126,14 @@
                 description: key === 'opacity' ? definition.description : undefined,
                 condition: form => !!plugin_settings.shadow_enabled.value && !!(form[export_field] || form[plugin_id + '_floor_enabled'] || form[plugin_id + '_lighting_enabled'])
             };
+            if (labels_only) return update_field_labels(installed_shadow_fields.get(field), installed);
             previous_shadow_fields.set(field, Screencam.gif_options_dialog.form_config[field]);
             installed_shadow_fields.set(field, installed);
             Screencam.gif_options_dialog.form_config[field] = installed;
         });
     }
 
-    function setup_floor_fields() {
+    function setup_floor_fields(labels_only = false) {
         const values = read_values();
         const definitions = {};
         floor_keys.forEach(key => {
@@ -1904,6 +2192,7 @@
             }
         };
         Object.entries(definitions).forEach(([key, field]) => {
+            if (labels_only) return update_field_labels(installed_floor_fields.get(key), field);
             previous_floor_fields.set(key, Screencam.gif_options_dialog.form_config[key]);
             installed_floor_fields.set(key, field);
             Screencam.gif_options_dialog.form_config[key] = field;
@@ -2724,7 +3013,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.6.3',
+        version: '3.6.4',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -2743,7 +3032,7 @@
             const form_state = capture_form(true);
             const form_was_open = Dialog.open === Screencam.gif_options_dialog;
             ordered_settings().forEach(([key, definition]) => {
-                plugin_settings[key] = new Setting(plugin_id + '_' + key, {...definition, plugin: plugin_id, category: 'export', onChange: refresh_tools});
+                plugin_settings[key] = new Setting(plugin_id + '_' + key, {...definition, plugin: plugin_id, category: 'export', onChange: key === 'language' ? change_language : refresh_tools});
             });
             previous_field = Screencam.gif_options_dialog.form_config[export_field];
             Screencam.gif_options_dialog.form_config[export_field] = {

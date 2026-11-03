@@ -1,8 +1,8 @@
 # Modeler Toolkit
 
-Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont en français, quelle que soit la langue de Blockbench.
+Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.6.3**.
+Version actuelle : **3.6.4**.
 
 ## Installation
 
@@ -18,6 +18,8 @@ Version actuelle : **3.6.3**.
 Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js), puis utiliser **Charger un plugin depuis un fichier**. Installez une seule copie. Ce dépôt est distribué indépendamment du catalogue officiel de Blockbench.
 
 ## À quoi sert chaque bouton ?
+
+Le sélecteur **Langue / Language** se trouve tout en haut des **Paramètres de Modeler Toolkit**. Choisissez **Français** ou **English**, puis validez. Les menus, paramètres, messages et options ajoutées à la fenêtre GIF changent de langue sans redémarrage. Le choix est mémorisé sur cet appareil, après fermeture et réouverture de Blockbench. Le français reste la valeur par défaut. La langue de Blockbench, les noms du modèle, le texte du filigrane, les raccourcis et les configurations de capture restent inchangés. Réinitialiser une rubrique ne réinitialise pas la langue.
 
 | Bouton | Fonction |
 | --- | --- |
