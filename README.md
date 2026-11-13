@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.6.4**.
+Version actuelle : **3.6.6**.
 
 ## Installation
 
@@ -19,7 +19,7 @@ Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/M
 
 ## À quoi sert chaque bouton ?
 
-Le sélecteur **Langue / Language** se trouve tout en haut des **Paramètres de Modeler Toolkit**. Choisissez **Français** ou **English**, puis validez. Les menus, paramètres, messages et options ajoutées à la fenêtre GIF changent de langue sans redémarrage. Le choix est mémorisé sur cet appareil, après fermeture et réouverture de Blockbench. Le français reste la valeur par défaut. La langue de Blockbench, les noms du modèle, le texte du filigrane, les raccourcis et les configurations de capture restent inchangés. Réinitialiser une rubrique ne réinitialise pas la langue.
+Dans **Fichier > Plugins > Modeler Toolkit > Settings**, le sélecteur **Langue / Language** applique et mémorise immédiatement le choix **Français** ou **English**. La fiche ouverte, les menus du plugin et les options GIF s’actualisent sans fermer la fenêtre ni sélectionner un autre plugin. Le choix reste enregistré après rechargement. Les autres réglages et la langue de Blockbench sont conservés. Le sélecteur est également disponible tout en haut des **Paramètres de Modeler Toolkit**, où le choix s’applique après validation. Le français reste la valeur par défaut.
 
 | Bouton | Fonction |
 | --- | --- |
@@ -58,7 +58,9 @@ Un changement de géométrie, de textures, de format ou de résolution UV peut r
 
 Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
 
-La dernière configuration de cette fenêtre est mémorisée automatiquement sur cet appareil, dès que vous modifiez un réglage ou fermez la fenêtre. Elle est retrouvée après fermeture et réouverture de Blockbench : format, durée, FPS, dimensions, zoom, fond, rotation, sol, lumière, rendu propre et activation du filigrane. Les cases cochées et les valeurs des options désactivées sont conservées. Le fichier choisi comme image de fond doit rester accessible au même emplacement. L’animation choisie est retrouvée par son identifiant ou son nom lorsqu’elle existe dans le modèle ouvert ; sinon, une animation disponible est proposée. Ces préférences locales ne modifient pas les modèles et ne sont pas incluses dans les exports. Les valeurs par défaut des paramètres servent lorsqu’aucune configuration de capture n’a encore été mémorisée.
+La fenêtre GIF mémorise ses réglages sur cet appareil, y compris après fermeture et réouverture de Blockbench. Les cases cochées et les valeurs des options désactivées sont conservées. L’image de fond doit rester accessible au même emplacement. L’animation choisie est retrouvée par son identifiant ou son nom lorsqu’elle existe dans le modèle ouvert. Sinon, une animation disponible est proposée.
+
+Quand vous validez une modification dans **Paramètres de Modeler Toolkit**, la valeur correspondante est appliquée à la fenêtre GIF. Vous pouvez encore la modifier dans cette fenêtre pour vos captures. Le bouton **Reprendre les réglages du plugin**, dans la fenêtre GIF, réapplique d’un coup vos réglages d’ombre, de rendu propre, d’éclairage et de sol. Le format, la durée, le cadrage, le fond, l’animation et l’activation du filigrane restent tels que vous les avez choisis. Ces préférences sont locales et ne modifient pas les modèles.
 
 L’option **Ombre dynamique / Rendu propre** applique un léger retrait des bords UV pendant le dessin pour limiter les bavures de pixels voisins. Ce nettoyage fonctionne avec ou sans filigrane, dans le cadre de capture, l’aperçu fixe et les exports. Il respecte les UV par face, les boîtes UV, les rotations, les miroirs et les images des textures animées. Seules les coordonnées d’affichage sont ajustées temporairement puis restaurées après chaque image, même en cas d’erreur : les UV du modèle, les textures et les sauvegardes restent intacts.
 

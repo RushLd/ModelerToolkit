@@ -2,7 +2,7 @@
     const plugin_id = 'modeler_toolkit';
     const french_messages = {
         "language": "Langue / Language",
-        "language_description": "Langue de Modeler Toolkit uniquement. Le choix est enregistré sur cet appareil après validation, sans changer la langue de Blockbench.",
+        "language_description": "Langue de Modeler Toolkit uniquement, sans changer la langue de Blockbench.",
         "lighting_enabled": "Éclairage personnalisé",
         "lighting_description": "Éclairer temporairement le modèle et le sol avec les mêmes réglages dans l’aperçu et l’export.",
         "light_azimuth": "Direction de la lumière (°)",
@@ -197,7 +197,8 @@
         "settings_floor": "Sol",
         "settings_advanced": "Options avancées",
         "settings_reset_section": "Réinitialiser cette rubrique",
-        "settings_capture_defaults": "Valeurs par défaut des captures. La fenêtre GIF mémorise ses propres réglages.",
+        "settings_capture_defaults": "Les valeurs modifiées ici s’appliquent à la fenêtre GIF dès la validation. Les autres choix de capture sont conservés.",
+        "capture_reset_render_settings": "Reprendre les réglages du plugin",
         "finish_or_cancel_the_current_gif_recording_first": "Terminez ou annulez d’abord l’enregistrement GIF en cours.",
         "choose_an_animation_available_in_this_project_before_recording": "Choisissez une animation disponible dans ce projet avant de lancer l’enregistrement.",
         "confirm": "Valider",
@@ -207,7 +208,7 @@
 
     const english_messages = {
         "language": "Language / Langue",
-        "language_description": "Language for Modeler Toolkit only. Your choice is saved on this device after confirmation without changing the Blockbench language.",
+        "language_description": "Language for Modeler Toolkit only, without changing the Blockbench language.",
         "lighting_enabled": "Custom lighting",
         "lighting_description": "Temporarily light the model and floor with matching settings in the preview and export.",
         "light_azimuth": "Light direction (°)",
@@ -402,7 +403,8 @@
         "settings_floor": "Floor",
         "settings_advanced": "Advanced options",
         "settings_reset_section": "Reset this section",
-        "settings_capture_defaults": "Default capture settings. The GIF window remembers its own settings.",
+        "settings_capture_defaults": "Changes made here apply to the GIF window as soon as you confirm. Other capture choices are kept.",
+        "capture_reset_render_settings": "Use plugin settings",
         "finish_or_cancel_the_current_gif_recording_first": "Finish or cancel the current GIF recording first.",
         "choose_an_animation_available_in_this_project_before_recording": "Choose an animation available in this project before recording.",
         "confirm": "Confirm",
@@ -494,6 +496,14 @@
     const shadow_capture_fields = {color: 'modeler_toolkit_shadow_color', opacity: 'modeler_toolkit_shadow_opacity'};
     const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
     const lighting_keys = ['lighting_enabled', 'light_azimuth', 'light_elevation', 'light_tone', 'light_color', 'light_intensity', 'ambient_intensity'];
+    const capture_default_fields = {
+        enabled: export_field,
+        ...shadow_capture_fields,
+        light_x: light_x_field,
+        light_y: light_y_field,
+        ...Object.fromEntries([...floor_keys, ...lighting_keys].map(key => [key, plugin_id + '_' + key]))
+    };
+    const capture_reset_field = plugin_id + '_capture_reset';
     const settings_sections = create_settings_sections();
 
     function create_settings_sections() {
@@ -514,6 +524,7 @@
     let active_session = null;
     let pending_preview = null;
     let settings_dialog = null;
+    let restore_language_property = null;
     let preview_dialog = null;
     let preview_action = null;
     let previous_create_gif;
@@ -565,9 +576,9 @@
         }
     }
 
-    function change_language(value) {
+    function change_language(value, force = false) {
         const next_language = value === 'en' ? 'en' : 'fr';
-        if (interface_language === next_language) return;
+        if (!force && interface_language === next_language) return;
         interface_language = next_language;
         Object.assign(setting_definitions, create_setting_definitions());
         Object.assign(light_presets, create_light_presets());
@@ -583,7 +594,7 @@
             if (!action) return;
             action.setName(definition.name);
             action.description = definition.description || '';
-            action.menu_node.title = action.description;
+            if (action.menu_node) action.menu_node.title = action.description;
             action.nodes.forEach(node => {
                 node.querySelectorAll('.tooltip_description').forEach(label => label.textContent = action.description);
                 node.querySelectorAll('.toolbar_label').forEach(label => label.textContent = action.name);
@@ -610,7 +621,45 @@
         } finally {
             restoring_capture_configuration = was_restoring;
         }
+        Settings.dialog?.content_vue?.$forceUpdate();
+        const plugins_view = Plugins.dialog?.content_vue;
+        if (plugins_view?.selected_plugin?.id === plugin_id) {
+            const selected_plugin = plugins_view.selected_plugin;
+            plugins_view.selected_plugin = null;
+            plugins_view.selected_plugin = selected_plugin;
+        }
+        plugins_view?.$forceUpdate();
         MenuBar.update();
+    }
+
+    function observe_language_setting() {
+        const setting = plugin_settings.language;
+        const descriptor = Object.getOwnPropertyDescriptor(setting, 'master_value');
+        let stored_value = setting.master_value;
+        const generation = lifecycle;
+        Object.defineProperty(setting, 'master_value', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return descriptor.get ? descriptor.get.call(setting) : stored_value;
+            },
+            set(value) {
+                const previous = this.master_value;
+                if (descriptor.set) descriptor.set.call(setting, value);
+                else stored_value = value;
+                if (previous === this.master_value) return;
+                queueMicrotask(() => {
+                    if (!plugin_loaded || generation !== lifecycle) return;
+                    change_language(setting.value);
+                    Settings.saveLocalStorages();
+                });
+            }
+        });
+        restore_language_property = () => {
+            const value = setting.master_value;
+            Object.defineProperty(setting, 'master_value', descriptor.get ? descriptor : {...descriptor, value});
+        };
+        change_language(setting.value, true);
     }
 
     function refresh_tools() {
@@ -1986,6 +2035,31 @@
         }
     }
 
+    function capture_defaults() {
+        const values = read_values();
+        return {
+            [light_field]: 'settings',
+            ...Object.fromEntries(Object.entries(capture_default_fields).map(([key, field]) => [field, values[key]]))
+        };
+    }
+
+    function persist_capture_configuration(state) {
+        capture_configuration = state;
+        try {
+            const stored = localStorage.getItem(capture_configuration_key);
+            if (!state) {
+                if (stored !== null) localStorage.removeItem(capture_configuration_key);
+            } else {
+                const serialized = JSON.stringify(state);
+                if (stored !== serialized) localStorage.setItem(capture_configuration_key, serialized);
+            }
+            capture_storage_error_reported = false;
+        } catch (error) {
+            if (!capture_storage_error_reported) Blockbench.showQuickMessage(translate('capture_configuration_storage_failed'), 6000);
+            capture_storage_error_reported = true;
+        }
+    }
+
     function save_capture_configuration() {
         if (!plugin_loaded || restoring_capture_configuration) return;
         const form_state = capture_form(true);
@@ -1996,24 +2070,39 @@
         const state = normalize_capture_configuration({version: 1, ...form_state, animation: animation ? {uuid: animation.uuid, name: animation.name} : capture_configuration?.animation});
         if (!state) return;
         if (animation && Project) animation_choices.set(Project, animation.uuid);
-        capture_configuration = state;
-        try {
-            const serialized = JSON.stringify(state);
-            if (localStorage.getItem(capture_configuration_key) !== serialized) localStorage.setItem(capture_configuration_key, serialized);
-            capture_storage_error_reported = false;
-        } catch (error) {
-            if (!capture_storage_error_reported) Blockbench.showQuickMessage(translate('capture_configuration_storage_failed'), 6000);
-            capture_storage_error_reported = true;
+        const defaults = normalize_capture_configuration({version: 1, values: capture_defaults()});
+        for (const [field, value] of Object.entries(defaults?.values || {})) {
+            if (state.values[field] === value) delete state.values[field];
         }
+        persist_capture_configuration(state);
     }
 
     function restore_capture_configuration(dialog) {
-        if (!capture_configuration || !dialog.form) return;
+        if (!dialog.form) return;
         const state = normalize_capture_configuration(capture_configuration);
-        if (!state) return;
-        dialog.setFormValues(state.values, false);
-        dialog.form.setToggles(state.toggles, false);
+        dialog.setFormValues({...capture_defaults(), ...state?.values}, false);
+        if (state) dialog.form.setToggles(state.toggles, false);
         dialog.form.updateValues({cause: 'setup'});
+    }
+
+    function reset_capture_settings(fields) {
+        const defaults = capture_defaults();
+        const values = Object.fromEntries(fields.map(field => [field, defaults[field]]));
+        if (capture_configuration) {
+            const remaining = {...capture_configuration.values};
+            fields.forEach(field => delete remaining[field]);
+            persist_capture_configuration(normalize_capture_configuration({...capture_configuration, values: remaining}));
+        }
+        const dialog = Screencam.gif_options_dialog;
+        if (!dialog.form) return;
+        dialog.setFormValues(values, false);
+        dialog.form.updateValues({cause: 'setup'});
+    }
+
+    function update_capture_setting(key) {
+        const field = capture_default_fields[key];
+        if (field) reset_capture_settings(key === 'light_x' || key === 'light_y' ? [field, light_field] : [field]);
+        else if (key === 'shadow_enabled') Screencam.gif_options_dialog.form?.updateValues({cause: 'setup'});
     }
 
     function rebuild_form(state) {
@@ -2150,6 +2239,13 @@
                 condition: key === 'floor_enabled' ? undefined : form => floor_field_visible(key, {floor_enabled: form[plugin_id + '_floor_enabled'], floor_style: form[plugin_id + '_floor_style']})
             };
         });
+        definitions[capture_reset_field] = {
+            type: 'buttons',
+            buttons: [translate('capture_reset_render_settings')],
+            click() {
+                reset_capture_settings([light_field, ...Object.values(capture_default_fields)]);
+            }
+        };
         definitions[plugin_id + '_capture_preview'] = {
             type: 'buttons',
             buttons: [translate('preview_gif_render')],
@@ -3013,7 +3109,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.6.4',
+        version: '3.6.6',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -3032,7 +3128,15 @@
             const form_state = capture_form(true);
             const form_was_open = Dialog.open === Screencam.gif_options_dialog;
             ordered_settings().forEach(([key, definition]) => {
-                plugin_settings[key] = new Setting(plugin_id + '_' + key, {...definition, plugin: plugin_id, category: 'export', onChange: key === 'language' ? change_language : refresh_tools});
+                plugin_settings[key] = new Setting(plugin_id + '_' + key, {
+                    ...definition,
+                    plugin: plugin_id,
+                    category: 'export',
+                    onChange: key === 'language' ? change_language : () => {
+                        if (module_keys.has(key)) refresh_tools();
+                        else update_capture_setting(key);
+                    }
+                });
             });
             previous_field = Screencam.gif_options_dialog.form_config[export_field];
             Screencam.gif_options_dialog.form_config[export_field] = {
@@ -3066,11 +3170,7 @@
                 restoring_capture_configuration = true;
                 try {
                     const result = previous_open?.apply(this, args);
-                    if (capture_configuration) restore_capture_configuration(this);
-                    else {
-                        const values = read_values();
-                        this.setFormValues({[export_field]: values.enabled, ...Object.fromEntries(lighting_keys.map(key => [plugin_id + '_' + key, values[key]]))});
-                    }
+                    restore_capture_configuration(this);
                     update_animation_fields(this, capture_configuration?.animation);
                     return result;
                 } finally {
@@ -3158,12 +3258,14 @@
                 }
             });
             setup_tool_modules();
+            observe_language_setting();
             Blockbench.on('unselect_project', abort_recording);
             Blockbench.on('close_project', abort_recording);
             restoring_capture_configuration = true;
             try {
                 rebuild_form(form_state);
-                if (!form_was_open) restore_capture_configuration(Screencam.gif_options_dialog);
+                restore_capture_configuration(Screencam.gif_options_dialog);
+                if (form_was_open) update_animation_fields(Screencam.gif_options_dialog, capture_configuration?.animation);
             } finally {
                 restoring_capture_configuration = false;
             }
@@ -3173,6 +3275,8 @@
             if (Dialog.open === Screencam.gif_options_dialog) save_capture_configuration();
             plugin_loaded = false;
             lifecycle++;
+            restore_language_property?.();
+            restore_language_property = null;
             font_process?.kill();
             font_process = null;
             abort_recording();
