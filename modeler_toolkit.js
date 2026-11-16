@@ -174,8 +174,8 @@
         "back_to_settings": "Retour aux paramètres",
         "modeler_toolkit_watermark": "Filigrane de Modeler Toolkit",
         "unnamed_animation": "Animation sans nom",
-        "animation_to_record": "Animation à enregistrer",
-        "record_this_animation_from_any_editor_mode": "Enregistrer cette animation depuis n’importe quel mode de l’éditeur.",
+        "animation_to_record": "Animations à enregistrer",
+        "record_this_animation_from_any_editor_mode": "Enregistrer une ou plusieurs animations depuis n’importe quel mode de l’éditeur. Elles sont jouées à la suite, dans l’ordre de la liste.",
         "shadow_light_direction": "Direction de la lumière de l’ombre",
         "choose_where_the_light_comes_from_for_this_export_the_shadow_pro": "Choisissez la provenance de la lumière pour cet export. L’ombre est projetée dans la direction opposée.",
         "negative_light_from_the_left_positive_light_from_the_right": "Valeur négative : lumière depuis la gauche. Valeur positive : lumière depuis la droite.",
@@ -200,7 +200,7 @@
         "settings_capture_defaults": "Les valeurs modifiées ici s’appliquent à la fenêtre GIF dès la validation. Les autres choix de capture sont conservés.",
         "capture_reset_render_settings": "Reprendre les réglages du plugin",
         "finish_or_cancel_the_current_gif_recording_first": "Terminez ou annulez d’abord l’enregistrement GIF en cours.",
-        "choose_an_animation_available_in_this_project_before_recording": "Choisissez une animation disponible dans ce projet avant de lancer l’enregistrement.",
+        "choose_an_animation_available_in_this_project_before_recording": "Choisissez au moins une animation disponible dans ce projet avant de lancer l’enregistrement.",
         "confirm": "Valider",
         "cancel": "Annuler",
         "technical_error": "Une erreur technique est survenue. Les détails sont disponibles dans la console de Blockbench."
@@ -380,8 +380,8 @@
         "back_to_settings": "Back to settings",
         "modeler_toolkit_watermark": "Modeler Toolkit watermark",
         "unnamed_animation": "Unnamed animation",
-        "animation_to_record": "Animation to record",
-        "record_this_animation_from_any_editor_mode": "Record this animation from any editor mode.",
+        "animation_to_record": "Animations to record",
+        "record_this_animation_from_any_editor_mode": "Record one or more animations from any editor mode. They play one after another, in list order.",
         "shadow_light_direction": "Shadow light direction",
         "choose_where_the_light_comes_from_for_this_export_the_shadow_pro": "Choose where the light comes from for this export. The shadow is projected in the opposite direction.",
         "negative_light_from_the_left_positive_light_from_the_right": "Negative: light from the left. Positive: light from the right.",
@@ -406,7 +406,7 @@
         "settings_capture_defaults": "Changes made here apply to the GIF window as soon as you confirm. Other capture choices are kept.",
         "capture_reset_render_settings": "Use plugin settings",
         "finish_or_cancel_the_current_gif_recording_first": "Finish or cancel the current GIF recording first.",
-        "choose_an_animation_available_in_this_project_before_recording": "Choose an animation available in this project before recording.",
+        "choose_an_animation_available_in_this_project_before_recording": "Choose at least one animation available in this project before recording.",
         "confirm": "Confirm",
         "cancel": "Cancel",
         "technical_error": "A technical error occurred. Details are available in the Blockbench console."
@@ -537,6 +537,8 @@
     let previous_animation_field;
     let installed_play_field;
     let installed_animation_field;
+    let previous_turnspeed_sync_field;
+    let installed_turnspeed_sync_field;
     let previous_watermark_field;
     let previous_watermark_settings_field;
     let installed_watermark_field;
@@ -2023,8 +2025,9 @@
             }
             if (field.toggle_enabled && typeof state.toggles?.[key] === 'boolean') toggles[key] = state.toggles[key];
         });
-        const animation = state.animation && typeof state.animation.uuid === 'string' && typeof state.animation.name === 'string' ? {uuid: state.animation.uuid, name: state.animation.name} : undefined;
-        return Object.keys(values).length ? {version: 1, values, toggles, animation} : null;
+        const remembered = Array.isArray(state.animations) ? state.animations : state.animation ? [state.animation] : [];
+        const animations = remembered.filter(item => item && typeof item.uuid === 'string' && typeof item.name === 'string').map(item => ({uuid: item.uuid, name: item.name}));
+        return Object.keys(values).length ? {version: 1, values, toggles, animations: animations.length ? animations : undefined} : null;
     }
 
     function load_capture_configuration() {
@@ -2065,11 +2068,11 @@
         const form_state = capture_form(true);
         if (!form_state) return;
         const animations = capture_animations();
-        const animation = animations.find(item => item.uuid === form_state.values[animation_field]);
+        const selected = selected_capture_animations(form_state.values[animation_field]);
         if (!animations.length && typeof capture_configuration?.values.play === 'boolean') form_state.values.play = capture_configuration.values.play;
-        const state = normalize_capture_configuration({version: 1, ...form_state, animation: animation ? {uuid: animation.uuid, name: animation.name} : capture_configuration?.animation});
+        const state = normalize_capture_configuration({version: 1, ...form_state, animations: selected.length ? selected.map(animation => ({uuid: animation.uuid, name: animation.name})) : capture_configuration?.animations});
         if (!state) return;
-        if (animation && Project) animation_choices.set(Project, animation.uuid);
+        if (selected.length && Project) animation_choices.set(Project, selected.map(animation => animation.uuid));
         const defaults = normalize_capture_configuration({version: 1, values: capture_defaults()});
         for (const [field, value] of Object.entries(defaults?.values || {})) {
             if (state.values[field] === value) delete state.values[field];
@@ -2122,22 +2125,49 @@
         return Object.fromEntries(capture_animations().map(animation => [animation.uuid, animation.name || translate('unnamed_animation')]));
     }
 
+    function selected_animation_uuids(value) {
+        if (Array.isArray(value)) return value.filter(uuid => typeof uuid === 'string');
+        return typeof value === 'string' && value ? [value] : [];
+    }
+
+    function selected_capture_animations(value) {
+        const uuids = selected_animation_uuids(value);
+        return capture_animations().filter(animation => uuids.includes(animation.uuid));
+    }
+
+    function sequence_length(sequence) {
+        return sequence.reduce((total, animation) => total + animation.length, 0);
+    }
+
     function setup_animation_fields() {
         const form = Screencam.gif_options_dialog.form_config;
         previous_play_field = form.play;
         previous_animation_field = form[animation_field];
+        previous_turnspeed_sync_field = form.turnspeed_o;
         installed_play_field = {...previous_play_field, condition: () => capture_animations().length > 0};
         installed_animation_field = {
             label: translate('animation_to_record'),
-            type: 'select',
-            options: animation_options,
+            type: 'multi_select',
+            get options() {
+                return animation_options();
+            },
+            value: [],
             condition: values => !!values.play && capture_animations().length > 0,
             description: translate('record_this_animation_from_any_editor_mode')
+        };
+        installed_turnspeed_sync_field = previous_turnspeed_sync_field && {
+            ...previous_turnspeed_sync_field,
+            condition: values => !!values.play && selected_capture_animations(values[animation_field]).length > 0,
+            click() {
+                const dialog = Screencam.gif_options_dialog;
+                const length = sequence_length(selected_capture_animations(dialog.getFormResult()[animation_field]));
+                dialog.setFormValues({turnspeed: 60 / (length || 1)});
+            }
         };
         const fields = Object.entries(form).filter(([key]) => key !== animation_field);
         Object.keys(form).forEach(key => delete form[key]);
         fields.forEach(([key, field]) => {
-            form[key] = key === 'play' ? installed_play_field : field;
+            form[key] = key === 'play' ? installed_play_field : key === 'turnspeed_o' && installed_turnspeed_sync_field ? installed_turnspeed_sync_field : field;
             if (key === 'play') form[animation_field] = installed_animation_field;
         });
     }
@@ -2295,20 +2325,65 @@
         });
     }
 
-    function update_animation_fields(dialog, remembered_animation) {
+    function update_animation_fields(dialog, remembered_animations = []) {
         const animations = capture_animations();
-        const current = Project && animation_choices.get(Project);
-        const selected = animations.find(animation => animation.uuid === current)
-            || animations.find(animation => animation.uuid === remembered_animation?.uuid)
-            || animations.find(animation => animation.name === remembered_animation?.name)
-            || animations.find(animation => animation.uuid === dialog.getFormResult()?.[animation_field])
-            || animations.find(animation => animation === Animation.selected) || animations[0];
-        const values = {[animation_field]: selected?.uuid || ''};
+        let selected = selected_capture_animations(Project && animation_choices.get(Project));
+        if (!selected.length) selected = animations.filter(animation => remembered_animations.some(item => item.uuid === animation.uuid));
+        if (!selected.length) selected = animations.filter(animation => remembered_animations.some(item => item.name === animation.name));
+        if (!selected.length) selected = selected_capture_animations(dialog.getFormResult()?.[animation_field]);
+        if (!selected.length) selected = [animations.find(animation => animation === Animation.selected) || animations[0]].filter(Boolean);
+        const values = {[animation_field]: selected.map(animation => animation.uuid)};
         if (!animations.length) values.play = false;
         dialog.setFormValues(values);
     }
 
-    function prepare_capture_animation(session, animation) {
+    function select_capture_animation(animation) {
+        AnimationItem.all.forEach(item => {
+            item.selected = item === animation;
+            item.playing = item === animation;
+        });
+        AnimationItem.selected = animation;
+        Timeline.vue.animation_length = animation.length;
+        Timeline.vue.markers = animation.markers;
+        Animator.MolangParser.resetVariables();
+        BarItems.slider_animation_length.update();
+    }
+
+    function sequence_time(sequence, time) {
+        let remaining = time % sequence_length(sequence);
+        for (const animation of sequence) {
+            if (remaining < animation.length) return {animation, time: remaining};
+            remaining -= animation.length;
+        }
+        const last = sequence[sequence.length - 1];
+        return {animation: last, time: last.length};
+    }
+
+    function play_capture_sequence(session, sequence) {
+        session.sequence = sequence;
+        session.original_preview = Animator.preview;
+        session.preview_wrapper = function(...args) {
+            if (session.disposed || Project !== session.project) return session.original_preview.apply(this, args);
+            const time = Timeline.time;
+            const frame = sequence_time(session.sequence, Math.max(0, time));
+            if (AnimationItem.selected !== frame.animation) select_capture_animation(frame.animation);
+            Timeline.time = frame.time;
+            try {
+                return session.original_preview.apply(this, args);
+            } finally {
+                Timeline.time = time;
+            }
+        };
+        Animator.preview = session.preview_wrapper;
+    }
+
+    function sequence_capture_options(options, sequence) {
+        if (sequence.length < 2 || options.length_mode !== 'animation') return options;
+        const speed = Timeline.playback_speed > 0 ? Timeline.playback_speed / 100 : 1;
+        return {...options, length_mode: 'seconds', length: sequence_length(sequence) / speed - 1e-6};
+    }
+
+    function prepare_capture_animation(session, sequence) {
         const items = AnimationItem.all.map(item => ({item, selected: item.selected, playing: item.playing}));
         session.animation_state = {
             project: Project,
@@ -2332,18 +2407,12 @@
             grid_position: three_grid.position.clone()
         };
         if (Timeline.playing) Timeline.pause();
-        items.forEach(({item}) => {
-            item.selected = item === animation;
-            item.playing = item === animation;
-        });
-        AnimationItem.selected = animation;
-        Timeline.vue.animation_length = animation.length;
-        Timeline.vue.markers = animation.markers;
-        Animator.MolangParser.resetVariables();
-        BarItems.slider_animation_length.update();
+        select_capture_animation(sequence[0]);
+        if (sequence.length > 1) play_capture_sequence(session, sequence);
     }
 
     function restore_capture_animation(session) {
+        if (session.preview_wrapper && Animator.preview === session.preview_wrapper) Animator.preview = session.original_preview;
         const state = session.animation_state;
         if (!state) return;
         session.animation_state = null;
@@ -3171,7 +3240,7 @@
                 try {
                     const result = previous_open?.apply(this, args);
                     restore_capture_configuration(this);
-                    update_animation_fields(this, capture_configuration?.animation);
+                    update_animation_fields(this, capture_configuration?.animations);
                     return result;
                 } finally {
                     restoring_capture_configuration = false;
@@ -3194,7 +3263,8 @@
             previous_confirm = Screencam.gif_options_dialog.onConfirm;
             wrapped_confirm = function(form_data) {
                 save_capture_configuration();
-                if (Project && form_data[animation_field]) animation_choices.set(Project, form_data[animation_field]);
+                const selected = selected_animation_uuids(form_data[animation_field]);
+                if (Project && selected.length) animation_choices.set(Project, selected);
                 return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] || form_data[plugin_id + '_lighting_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
             };
             Screencam.gif_options_dialog.onConfirm = wrapped_confirm;
@@ -3212,13 +3282,19 @@
                     dispose_session(active_session);
                 }
                 const animations = capture_animations();
-                const animation = options.play ? options[animation_field]
-                    ? animations.find(item => item.uuid === options[animation_field])
-                    : animations.find(item => item === Animation.selected) || animations[0] : null;
-                if (options.play && !animation) {
+                let sequence = [];
+                if (options.play) {
+                    sequence = Array.isArray(options[animation_field]) || options[animation_field]
+                        ? selected_capture_animations(options[animation_field])
+                        : [animations.find(item => item === Animation.selected) || animations[0]].filter(Boolean);
+                }
+                if (options.play && !sequence.length) {
                     Blockbench.showQuickMessage(translate('choose_an_animation_available_in_this_project_before_recording'), 4000);
                     return;
                 }
+                const timed = sequence.filter(animation => animation.length > 0);
+                sequence = timed.length ? timed : sequence.slice(0, 1);
+                options = sequence_capture_options(options, sequence);
                 const render_values = preview_request?.render_values || capture_render_values(options);
                 const project = Project;
                 const generation = lifecycle;
@@ -3233,8 +3309,8 @@
                 session.live_background = background;
                 active_session = session;
                 try {
-                    if (animation) {
-                        prepare_capture_animation(session, animation);
+                    if (sequence.length) {
+                        prepare_capture_animation(session, sequence);
                         Timeline.setTime(0);
                         Animator.preview(true);
                     }
@@ -3265,7 +3341,7 @@
             try {
                 rebuild_form(form_state);
                 restore_capture_configuration(Screencam.gif_options_dialog);
-                if (form_was_open) update_animation_fields(Screencam.gif_options_dialog, capture_configuration?.animation);
+                if (form_was_open) update_animation_fields(Screencam.gif_options_dialog, capture_configuration?.animations);
             } finally {
                 restoring_capture_configuration = false;
             }
@@ -3290,6 +3366,7 @@
             if (previous_field === undefined) delete Screencam.gif_options_dialog.form_config[export_field];
             else Screencam.gif_options_dialog.form_config[export_field] = previous_field;
             if (Screencam.gif_options_dialog.form_config.play === installed_play_field) Screencam.gif_options_dialog.form_config.play = previous_play_field;
+            if (installed_turnspeed_sync_field && Screencam.gif_options_dialog.form_config.turnspeed_o === installed_turnspeed_sync_field) Screencam.gif_options_dialog.form_config.turnspeed_o = previous_turnspeed_sync_field;
             if (Screencam.gif_options_dialog.form_config[animation_field] === installed_animation_field) {
                 if (previous_animation_field === undefined) delete Screencam.gif_options_dialog.form_config[animation_field];
                 else Screencam.gif_options_dialog.form_config[animation_field] = previous_animation_field;
