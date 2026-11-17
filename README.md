@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.6.6**.
+Version actuelle : **3.7.0**.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Dans **Fichier > Plugins > Modeler Toolkit > Settings**, le sélecteur **Langue 
 
 | Bouton | Fonction |
 | --- | --- |
-| **Optimiser la texture et les UV** | Reconstruit les textures compatibles en carrés en conservant le mode UV de chaque cube. Fusionne les faces identiques en UV par face, y compris après rotation ou miroir, et les dépliages complets identiques en boîte UV. Réserve 1 px transparent autour des régions ou des dépliages, sans prolonger leurs couleurs. Rend invisibles les faces entièrement transparentes. La texture peut devenir plus petite ; elle peut aussi s’agrandir si l’espacement l’exige. |
+| **Optimiser la texture et les UV** | Reconstruit les textures fixes et les flipbooks compatibles en conservant le mode UV de chaque cube. Fusionne les faces identiques en UV par face, y compris après rotation ou miroir, et les dépliages complets identiques en boîte UV. Réserve 1 px transparent autour des régions ou des dépliages, sans prolonger leurs couleurs. Rend invisibles les faces entièrement transparentes. La texture peut devenir plus petite ou s’agrandir si l’espacement l’exige. |
 | **Créer une texture avec des UV indépendants** | Fait l’inverse du partage : recrée chaque texture compatible en carré, avec une zone distincte pour chaque face, même si ses pixels sont identiques à ceux d’une autre. Conserve les pixels, les rotations, les miroirs et la transparence, avec 1 px transparent entre les zones. La texture peut s’agrandir. |
 | **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour annuler une optimisation, utilisez la restauration des textures et UV décrite plus bas. |
 | **Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
@@ -43,6 +43,8 @@ L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de 
 Les modèles peuvent mélanger **UV par face** et **boîtes UV**. L’optimisation conserve ces modes, les miroirs et la densité des pixels. En boîte UV, les faces restent liées à leur dépliage : le plugin déplace le dépliage entier et peut le partager avec un autre dépliage identique, sans le tourner ni séparer ses faces. Le padding de 1 px entoure ce dépliage complet ; les faces qui se touchent à l’intérieur restent jointives. Les pixels situés dans les parties inutilisées du dépliage ne sont pas recopiés.
 
 Lors de l’optimisation, une face dont tous les pixels utilisés ont un alpha à zéro devient invisible, aussi bien en UV par face qu’en boîte UV. Un seul pixel avec un alpha supérieur à zéro, même presque transparent, suffit à conserver la face. Les composantes RVB des pixels entièrement transparents ne comptent pas. Sur un cube, le plugin désactive la face avec l’état invisible natif de Blockbench. Sur un maillage, il retire la face vide ; ses données restent dans la sauvegarde pour permettre sa restauration. Pour les triangles et les quadrilatères, seuls les pixels touchés par les triangles UV sont vérifiés. Le bilan affiche le nombre de faces traitées. La création d’UV indépendants conserve les faces vides afin de pouvoir les peindre ensuite.
+
+Pour une texture flipbook, le plugin réutilise la même disposition UV sur chaque image et conserve le nombre d’images, leur ordre et les réglages de lecture. Pour fusionner deux zones, une même orientation, avec rotation ou miroir si nécessaire, doit faire correspondre leurs pixels sur toutes les images. Une face est masquée seulement si elle est transparente pendant toute la boucle.
 
 Pour peindre chaque face séparément, utilisez **Créer une texture avec des UV indépendants**. Le bouton agit sur tout le modèle, y compris les stades masqués. Chaque texture conserve ses faces attribuées : plusieurs textures ne sont pas fusionnées en une seule. Les pixels inutilisés ne sont pas recopiés. Les faces absentes restent absentes et les pixels transparents restent transparents. Les UV en boîte, les textures animées, les calques de peinture et les matériaux incompatibles sont conservés avec un message explicatif. Les atlas créés sont limités à 4096 × 4096 pixels.
 
@@ -102,7 +104,8 @@ Le plugin n’envoie aucun modèle, texture ou enregistrement et ne comporte ni 
 
 ## Compatibilité et limites
 
-- L’optimiseur traite les UV par face, les boîtes UV et les UV de maillages compatibles. Les textures animées, la composition en calques, les matériaux et les éléments incompatibles sont conservés au lieu d’être réorganisés.
+- L’optimiseur traite les UV par face, les boîtes UV et les UV de maillages compatibles. Les textures à calques, les matériaux et les éléments incompatibles conservent leur disposition d’origine.
+- Les flipbooks sont reconstruits avec des images carrées si elles tiennent dans la limite de la carte graphique. Pour les formats à résolution UV par texture, les images peuvent être rectangulaires si nécessaire et si l’option de carrés en puissance de deux est désactivée. Les flipbooks dont les images sont mal délimitées ou dont l’atlas ne tient pas dans les limites restent intacts.
 - Une boîte UV dont les faces utilisent plusieurs textures conserve sa disposition d’origine. Dans un format qui partage une résolution UV entre plusieurs textures, une texture contenant des boîtes UV garde ses dimensions pour conserver la densité des pixels. Si elle n’est pas carrée ou si le padding ne tient pas, elle est conservée avec un message explicatif.
 - Les doublons sont comparés sur les pixels contenus dans leurs régions UV, y compris après rotation ou miroir. Les pixels extérieurs aux régions ne bloquent pas leur fusion et ne sont plus recopiés dans l’atlas. L’alpha est comparé exactement ; les composantes RVB invisibles des pixels entièrement transparents sont ignorées. Le padding est toujours de 1 px transparent, quelle que soit la résolution UV du projet. Les pixels ne sont ni redimensionnés ni lissés.
 - De légères différences d’échantillonnage peuvent apparaître aux limites des pixels après une réorganisation des UV. Utilisez l’annulation ou la restauration si nécessaire. Les fichiers d’images d’origine ne sont pas automatiquement écrasés.
