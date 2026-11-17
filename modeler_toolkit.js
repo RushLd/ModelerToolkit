@@ -2069,10 +2069,11 @@
         if (!form_state) return;
         const animations = capture_animations();
         const selected = selected_capture_animations(form_state.values[animation_field]);
+        const references = capture_animation_references(selected);
         if (!animations.length && typeof capture_configuration?.values.play === 'boolean') form_state.values.play = capture_configuration.values.play;
-        const state = normalize_capture_configuration({version: 1, ...form_state, animations: selected.length ? selected.map(animation => ({uuid: animation.uuid, name: animation.name})) : capture_configuration?.animations});
+        const state = normalize_capture_configuration({version: 1, ...form_state, animations: references.length ? references : capture_configuration?.animations});
         if (!state) return;
-        if (selected.length && Project) animation_choices.set(Project, selected.map(animation => animation.uuid));
+        if (references.length && Project) animation_choices.set(Project, references);
         const defaults = normalize_capture_configuration({version: 1, values: capture_defaults()});
         for (const [field, value] of Object.entries(defaults?.values || {})) {
             if (state.values[field] === value) delete state.values[field];
@@ -2135,8 +2136,28 @@
         return capture_animations().filter(animation => uuids.includes(animation.uuid));
     }
 
+    function capture_animation_references(animations) {
+        return animations.map(({uuid, name}) => ({uuid, name}));
+    }
+
+    function resolve_capture_animations(animations, references = []) {
+        const by_uuid = new Map(animations.map(animation => [animation.uuid, animation]));
+        const selected = new Set(references.map(reference => by_uuid.get(reference.uuid)).filter(Boolean));
+        for (const reference of references) {
+            if (by_uuid.has(reference.uuid)) continue;
+            const match = animations.find(animation => animation.name === reference.name && !selected.has(animation));
+            if (match) selected.add(match);
+        }
+        return animations.filter(animation => selected.has(animation));
+    }
+
     function sequence_length(sequence) {
         return sequence.reduce((total, animation) => total + animation.length, 0);
+    }
+
+    function sequence_duration(sequence) {
+        const speed = Number.isFinite(Timeline.playback_speed) && Timeline.playback_speed > 0 ? Timeline.playback_speed / 100 : 1;
+        return sequence_length(sequence) / speed;
     }
 
     function setup_animation_fields() {
@@ -2160,8 +2181,8 @@
             condition: values => !!values.play && selected_capture_animations(values[animation_field]).length > 0,
             click() {
                 const dialog = Screencam.gif_options_dialog;
-                const length = sequence_length(selected_capture_animations(dialog.getFormResult()[animation_field]));
-                dialog.setFormValues({turnspeed: 60 / (length || 1)});
+                const duration = sequence_duration(selected_capture_animations(dialog.getFormResult()[animation_field]));
+                dialog.setFormValues({turnspeed: 60 / (duration || 1)});
             }
         };
         const fields = Object.entries(form).filter(([key]) => key !== animation_field);
@@ -2327,9 +2348,9 @@
 
     function update_animation_fields(dialog, remembered_animations = []) {
         const animations = capture_animations();
-        let selected = selected_capture_animations(Project && animation_choices.get(Project));
-        if (!selected.length) selected = animations.filter(animation => remembered_animations.some(item => item.uuid === animation.uuid));
-        if (!selected.length) selected = animations.filter(animation => remembered_animations.some(item => item.name === animation.name));
+        const project_choices = Project ? animation_choices.get(Project) : undefined;
+        let selected = resolve_capture_animations(animations, project_choices);
+        if (!selected.length) selected = resolve_capture_animations(animations, remembered_animations);
         if (!selected.length) selected = selected_capture_animations(dialog.getFormResult()?.[animation_field]);
         if (!selected.length) selected = [animations.find(animation => animation === Animation.selected) || animations[0]].filter(Boolean);
         const values = {[animation_field]: selected.map(animation => animation.uuid)};
@@ -2379,8 +2400,7 @@
 
     function sequence_capture_options(options, sequence) {
         if (sequence.length < 2 || options.length_mode !== 'animation') return options;
-        const speed = Timeline.playback_speed > 0 ? Timeline.playback_speed / 100 : 1;
-        return {...options, length_mode: 'seconds', length: sequence_length(sequence) / speed - 1e-6};
+        return {...options, length_mode: 'seconds', length: sequence_duration(sequence) - 1e-6};
     }
 
     function prepare_capture_animation(session, sequence) {
@@ -3263,8 +3283,8 @@
             previous_confirm = Screencam.gif_options_dialog.onConfirm;
             wrapped_confirm = function(form_data) {
                 save_capture_configuration();
-                const selected = selected_animation_uuids(form_data[animation_field]);
-                if (Project && selected.length) animation_choices.set(Project, selected);
+                const selected = selected_capture_animations(form_data[animation_field]);
+                if (Project && selected.length) animation_choices.set(Project, capture_animation_references(selected));
                 return previous_confirm.call(this, form_data[export_field] || form_data[plugin_id + '_floor_enabled'] || form_data[plugin_id + '_lighting_enabled'] ? {...form_data, shadow_enabled: false} : form_data);
             };
             Screencam.gif_options_dialog.onConfirm = wrapped_confirm;
