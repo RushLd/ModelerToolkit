@@ -56,9 +56,9 @@ Un changement de géométrie, de textures, de format ou de résolution UV peut r
 
 ## Enregistrement, éclairage, sol et ombres
 
-Choisissez l’animation à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer.
+Choisissez une ou plusieurs animations à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer. Plusieurs animations sont jouées à la suite, dans l’ordre de la liste du projet. En durée **Animation**, l’enregistrement couvre la durée totale de la séquence ; en secondes ou en images, la séquence reprend au début si la durée choisie la dépasse. Le bouton de synchronisation de la rotation se cale aussi sur la durée totale. Les animations de durée nulle sont ignorées.
 
-La fenêtre GIF mémorise ses réglages sur cet appareil, y compris après fermeture et réouverture de Blockbench. Les cases cochées et les valeurs des options désactivées sont conservées. L’image de fond doit rester accessible au même emplacement. L’animation choisie est retrouvée par son identifiant ou son nom lorsqu’elle existe dans le modèle ouvert. Sinon, une animation disponible est proposée.
+La fenêtre GIF mémorise ses réglages sur cet appareil, y compris après fermeture et réouverture de Blockbench. Les cases cochées et les valeurs des options désactivées sont conservées. L’image de fond doit rester accessible au même emplacement. Chaque animation choisie est retrouvée par son identifiant, puis par son nom si cet identifiant a changé. Si aucune n’est retrouvée dans le modèle ouvert, une animation disponible est proposée.
 
 Quand vous validez une modification dans **Paramètres de Modeler Toolkit**, la valeur correspondante est appliquée à la fenêtre GIF. Vous pouvez encore la modifier dans cette fenêtre pour vos captures. Le bouton **Reprendre les réglages du plugin**, dans la fenêtre GIF, réapplique d’un coup vos réglages d’ombre, de rendu propre, d’éclairage et de sol. Le format, la durée, le cadrage, le fond, l’animation et l’activation du filigrane restent tels que vous les avez choisis. Ces préférences sont locales et ne modifient pas les modèles.
 
@@ -86,7 +86,7 @@ Le sol se place sous le point le plus bas du modèle à la première image enreg
 
 Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle éclairé, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
 
-**Aperçu du rendu GIF** capture une seule image PNG avec les réglages visuels choisis. Il montre la première pose de l’animation sélectionnée lorsqu’elle est activée et conserve les proportions de la capture. La caméra et l’état de l’animation sont ensuite restaurés.
+**Aperçu du rendu GIF** capture une seule image PNG avec les réglages visuels choisis. Il montre la première pose de la première animation sélectionnée lorsqu’elle est activée et conserve les proportions de la capture. La caméra et l’état de l’animation sont ensuite restaurés.
 
 Le **filigrane** comporte une ligne de texte avec couleur, police, taille, position et marge réglables. Son activation se choisit séparément pour chaque capture. Les polices installées sur l’ordinateur sont proposées lorsque le système permet de les lire.
 
