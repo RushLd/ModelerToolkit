@@ -195,6 +195,8 @@
         "watermark": "Filigrane",
         "add_your_configured_text_to_every_frame_independently_of_dynamic": "Ajouter le texte configuré à chaque image, indépendamment de l’option « Ombre dynamique / Rendu propre ».",
         "watermark_settings": "Paramètres du filigrane",
+        "show_reference_images": "Afficher les images de référence",
+        "capture_visible_reference_images": "Inclure les images de référence visibles dans le cadre de capture, l’aperçu et l’export.",
         "capture_configuration_storage_failed": "Les réglages GIF sont conservés pour cette session, mais leur sauvegarde locale a échoué. Ils risquent d’être perdus à la fermeture de Blockbench.",
         "settings_tools": "Outils",
         "settings_render": "Rendu",
@@ -406,6 +408,8 @@
         "watermark": "Watermark",
         "add_your_configured_text_to_every_frame_independently_of_dynamic": "Add the configured text to every frame, independently of Dynamic shadow / Clean rendering.",
         "watermark_settings": "Watermark settings",
+        "show_reference_images": "Show reference images",
+        "capture_visible_reference_images": "Include visible reference images in the recording frame, preview and export.",
         "capture_configuration_storage_failed": "GIF settings are kept for this session, but saving them locally failed. They may be lost when Blockbench closes.",
         "settings_tools": "Tools",
         "settings_render": "Rendering",
@@ -487,6 +491,7 @@
     const module_keys = new Set(['atlas', 'atlas_power', 'inverted', 'outline', 'layers']);
     const export_field = 'dynamic_render_enabled';
     const animation_field = 'modeler_toolkit_animation';
+    const reference_images_field = 'modeler_toolkit_reference_images';
     const watermark_field = 'modeler_toolkit_watermark';
     const watermark_settings_field = 'modeler_toolkit_watermark_settings';
     const light_field = 'modeler_toolkit_light_direction';
@@ -543,6 +548,8 @@
     let previous_form_change;
     let previous_button;
     let previous_field;
+    let previous_reference_images_field;
+    let installed_reference_images_field;
     let previous_play_field;
     let previous_animation_field;
     let installed_play_field;
@@ -620,6 +627,7 @@
         }
         const form = Screencam.gif_options_dialog.form_config;
         update_field_labels(form[export_field], {label: translate('dynamic_shadow_clean_render'), description: translate('use_modeler_toolkit_render_settings_for_this_export')});
+        update_field_labels(installed_reference_images_field, {label: translate('show_reference_images'), description: translate('capture_visible_reference_images')});
         update_field_labels(installed_watermark_field, {label: translate('watermark'), description: translate('add_your_configured_text_to_every_frame_independently_of_dynamic')});
         update_field_labels(installed_watermark_settings_field, {buttons: [translate('watermark_settings')]});
         update_field_labels(installed_animation_field, {label: translate('animation_to_record'), description: translate('record_this_animation_from_any_editor_mode')});
@@ -2112,6 +2120,7 @@
     function capture_defaults() {
         const values = read_values();
         return {
+            [reference_images_field]: false,
             [light_field]: 'settings',
             ...Object.fromEntries(Object.entries(capture_default_fields).map(([key, field]) => [field, values[key]]))
         };
@@ -2950,6 +2959,12 @@
         if (session.live_request) cancelAnimationFrame(session.live_request);
         session.live_canvas?.remove();
         if (session.live_buffer) session.live_buffer.width = session.live_buffer.height = 0;
+        if (session.reference_model_canvas) session.reference_model_canvas.width = session.reference_model_canvas.height = 0;
+        session.reference_plane_geometry?.dispose();
+        session.reference_planes?.forEach(mesh => {
+            mesh.material.map.dispose();
+            mesh.material.dispose();
+        });
         session.live_background = null;
         if (session.watermark_canvas) {
             session.watermark_canvas.width = 0;
@@ -3039,6 +3054,10 @@
             }
             try {
                 if (!session.disposed && Project === session.project) {
+                    const references = capture_reference_images(session);
+                    if (references.length) {
+                        compose_capture_frame(session, canvas, references, vars.background_image, vars.crop, vars.custom_resolution);
+                    }
                     draw_watermark(canvas, session.options, session);
                     update_live_canvas(session, canvas);
                 }
@@ -3118,6 +3137,149 @@
         context.drawImage(canvas, 0, 0);
     }
 
+    function capture_reference_images(session) {
+        if (!session.capture_options[reference_images_field] || typeof ReferenceImage === 'undefined') return [];
+        const view = session.view;
+        const sources = session.reference_sources ||= new WeakMap();
+        return ReferenceImage.active.filter(reference => {
+            if (!reference.visibility || !reference.image_is_loaded || reference.is_video || reference.opacity < 0.1 || !reference.img.naturalWidth) return false;
+            if (reference.view_mode === 'plane') {
+                if (reference.scene_object.parent !== Canvas.scene || !reference.scene_object.visible) return false;
+            } else if (!reference.node.isConnected || (reference.is_blueprint && (!view.isOrtho || view.angle !== reference.attached_side))) return false;
+            const source = reference.img.currentSrc;
+            const cached = sources.get(reference.img);
+            if (cached && cached.source === source) return cached.readable;
+            const sample = session.reference_sample ||= document.createElement('canvas');
+            sample.width = sample.height = 1;
+            const context = sample.getContext('2d', {willReadFrequently: true});
+            let readable = true;
+            try {
+                context.drawImage(reference.img, 0, 0, 1, 1);
+                context.getImageData(0, 0, 1, 1);
+            } catch (error) {
+                readable = false;
+            }
+            sources.set(reference.img, {source, readable});
+            return readable;
+        });
+    }
+
+    function draw_capture_reference_planes(context, session, preview, references, area) {
+        if (!references.length) return;
+        const scene = session.reference_scene ||= new THREE.Scene();
+        const geometry = session.reference_plane_geometry ||= new THREE.PlaneGeometry(1, 1);
+        const planes = session.reference_planes ||= new Map();
+        const renderer = preview.renderer;
+        const alpha = renderer.getClearAlpha();
+        try {
+            references.forEach((reference, index) => {
+                let mesh = planes.get(reference);
+                if (!mesh) {
+                    const map = new THREE.Texture(reference.img);
+                    map.colorSpace = THREE.SRGBColorSpace;
+                    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({map, transparent: true, depthTest: false, depthWrite: false, toneMapped: false}));
+                    mesh.matrixAutoUpdate = false;
+                    planes.set(reference, mesh);
+                }
+                const {material} = mesh;
+                const source = reference.img.currentSrc;
+                if (mesh.userData.source !== source) {
+                    mesh.userData.source = source;
+                    material.map.needsUpdate = true;
+                }
+                material.map.repeat.set(reference.flip_x ? -1 : 1, reference.flip_y ? -1 : 1);
+                material.map.offset.set(reference.flip_x ? 1 : 0, reference.flip_y ? 1 : 0);
+                material.opacity = reference.opacity;
+                const side = reference.cull_backface ? THREE.FrontSide : THREE.DoubleSide;
+                if (material.side !== side) {
+                    material.side = side;
+                    material.needsUpdate = true;
+                }
+                reference.scene_object.updateWorldMatrix(true, false);
+                mesh.matrix.copy(reference.scene_object.matrixWorld).scale(new THREE.Vector3(...reference.size, 1));
+                mesh.matrixWorldNeedsUpdate = true;
+                mesh.renderOrder = index;
+                scene.add(mesh);
+            });
+            renderer.setClearAlpha(0);
+            renderer.render(scene, preview.camera);
+            context.drawImage(preview.canvas, ...area);
+        } finally {
+            renderer.setClearAlpha(alpha);
+            scene.clear();
+        }
+    }
+
+    function draw_capture_reference_layer(context, session, preview, references, area) {
+        if (!references.length) return;
+        draw_capture_reference_planes(context, session, preview, references.filter(reference => reference.view_mode === 'plane'), area);
+        const viewport = session.view.canvas.getBoundingClientRect();
+        if (!viewport.width || !viewport.height) return;
+        const [x, y, width, height] = area;
+        context.save();
+        try {
+            context.beginPath();
+            context.rect(x, y, width, height);
+            context.clip();
+            context.translate(x, y);
+            context.scale(width / viewport.width, height / viewport.height);
+            for (const reference of references) {
+                if (reference.view_mode === 'plane') continue;
+                const rect = reference.node.getBoundingClientRect();
+                context.save();
+                try {
+                    context.translate(rect.left - viewport.left + rect.width / 2, rect.top - viewport.top + rect.height / 2);
+                    context.rotate(reference.rotation * Math.PI / 180);
+                    context.scale(reference.flip_x ? -1 : 1, reference.flip_y ? -1 : 1);
+                    context.globalAlpha = reference.opacity;
+                    context.filter = reference.node.style.filter || 'none';
+                    if (reference.node.style.mixBlendMode === 'lighten') context.globalCompositeOperation = 'lighten';
+                    context.drawImage(reference.img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
+                } finally {
+                    context.restore();
+                }
+            }
+        } finally {
+            context.restore();
+        }
+    }
+
+    function compose_capture_frame(session, canvas, references, background, crop, custom_resolution) {
+        const preview = Screencam.NoAAPreview;
+        const options = session.capture_options;
+        const ratio = window.devicePixelRatio;
+        const pixelate = options.pixelate || 1;
+        const area = [
+            custom_resolution ? 0 : Math.round(-crop.left * ratio),
+            custom_resolution ? 0 : Math.round(-crop.top * ratio),
+            Math.round(preview.width * pixelate),
+            Math.round(preview.height * pixelate)
+        ];
+        let model = preview.canvas;
+        if (references.some(reference => reference.view_mode === 'plane')) {
+            const buffer = session.reference_model_canvas ||= document.createElement('canvas');
+            if (buffer.width !== model.width || buffer.height !== model.height) {
+                buffer.width = model.width;
+                buffer.height = model.height;
+            }
+            const context = buffer.getContext('2d');
+            context.clearRect(0, 0, buffer.width, buffer.height);
+            context.drawImage(model, 0, 0);
+            model = buffer;
+        }
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.imageSmoothingEnabled = false;
+        if (options.background) {
+            context.fillStyle = options.background;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        if (background?.naturalWidth) context.drawImage(background, 0, 0, canvas.width, canvas.height);
+        draw_capture_reference_layer(context, session, preview, references.filter(reference => reference.layer === 'background'), area);
+        context.drawImage(model, ...area);
+        draw_capture_reference_layer(context, session, preview, references.filter(reference => reference.layer !== 'background'), area);
+    }
+
     function render_capture_frame(session) {
         session.start_capture();
         const options = session.capture_options;
@@ -3148,20 +3310,12 @@
             canvas.width = width;
             canvas.height = height;
         }
-        const context = canvas.getContext('2d');
         let render_error;
         const render = () => {
             session.rendering_live = true;
             try {
                 preview.render();
-                context.clearRect(0, 0, width, height);
-                context.imageSmoothingEnabled = false;
-                if (options.background) {
-                    context.fillStyle = options.background;
-                    context.fillRect(0, 0, width, height);
-                }
-                if (session.live_background) context.drawImage(session.live_background, 0, 0, width, height);
-                context.drawImage(preview.canvas, custom ? 0 : Math.round(-crop.left * ratio), custom ? 0 : Math.round(-crop.top * ratio), Math.round(preview.width * pixelate), Math.round(preview.height * pixelate));
+                compose_capture_frame(session, canvas, capture_reference_images(session), session.live_background, crop, custom);
                 draw_watermark(canvas, session.options, session);
             } catch (error) {
                 render_error = error;
@@ -3269,7 +3423,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.7.0',
+        version: '3.8.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -3298,7 +3452,20 @@
                     }
                 });
             });
-            previous_field = Screencam.gif_options_dialog.form_config[export_field];
+            const form = Screencam.gif_options_dialog.form_config;
+            previous_reference_images_field = form[reference_images_field];
+            installed_reference_images_field = {
+                label: translate('show_reference_images'),
+                type: 'checkbox',
+                value: false,
+                description: translate('capture_visible_reference_images')
+            };
+            const fields = Object.entries(form).filter(([key]) => key !== reference_images_field);
+            const background_index = fields.findIndex(([key]) => key === 'background_image');
+            fields.splice(background_index < 0 ? fields.length : background_index + 1, 0, [reference_images_field, installed_reference_images_field]);
+            Object.keys(form).forEach(key => delete form[key]);
+            Object.assign(form, Object.fromEntries(fields));
+            previous_field = form[export_field];
             Screencam.gif_options_dialog.form_config[export_field] = {
                 label: translate('dynamic_shadow_clean_render'),
                 type: 'checkbox',
@@ -3454,6 +3621,10 @@
             if (Screencam.gif_options_dialog.onOpen === wrapped_open) Screencam.gif_options_dialog.onOpen = previous_open;
             if (Screencam.gif_options_dialog.onFormChange === wrapped_form_change) Screencam.gif_options_dialog.onFormChange = previous_form_change;
             if (Screencam.gif_options_dialog.onButton === wrapped_button) Screencam.gif_options_dialog.onButton = previous_button;
+            if (Screencam.gif_options_dialog.form_config[reference_images_field] === installed_reference_images_field) {
+                if (previous_reference_images_field === undefined) delete Screencam.gif_options_dialog.form_config[reference_images_field];
+                else Screencam.gif_options_dialog.form_config[reference_images_field] = previous_reference_images_field;
+            }
             if (previous_field === undefined) delete Screencam.gif_options_dialog.form_config[export_field];
             else Screencam.gif_options_dialog.form_config[export_field] = previous_field;
             if (Screencam.gif_options_dialog.form_config.play === installed_play_field) Screencam.gif_options_dialog.form_config.play = previous_play_field;

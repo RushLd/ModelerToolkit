@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.7.0**.
+Version actuelle : **3.8.0**.
 
 ## Installation
 
@@ -87,6 +87,8 @@ Activez **Sol de rendu** pour ajouter une surface temporaire unie ou en dalles. 
 Le sol se place sous le point le plus bas du modèle à la première image enregistrée, puis reste fixe pendant l’animation. L’ombre s’arrête à ses bords. Prévoyez une surface assez grande pour les mouvements et l’ombre. Le sol est retiré à la fin de la capture, lors d’une annulation ou du déchargement du plugin. Il n’est jamais ajouté à la géométrie ni aux textures du modèle.
 
 Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle éclairé, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
+
+**Afficher les images de référence** inclut les références visibles de Blockbench, y compris les images placées sur un plan 3D, dans le cadre de capture, l’aperçu et l’export. Cette case est décochée par défaut et son état est mémorisé avec la configuration de capture.
 
 **Aperçu du rendu GIF** capture une seule image PNG avec les réglages visuels choisis. Il montre la première pose de la première animation sélectionnée lorsqu’elle est activée et conserve les proportions de la capture. La caméra et l’état de l’animation sont ensuite restaurés.
 
