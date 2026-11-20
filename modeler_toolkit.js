@@ -38,7 +38,6 @@
         "incompatible_backup_preserved": "Cette sauvegarde ne correspond plus au projet actuel. Elle est conservée sans être appliquée. Vous pouvez relancer l’optimisation depuis les textures et UV actuels.",
         "previous_backups_preserved": "La restauration revient à l’état juste avant cette optimisation. Les sauvegardes antérieures restent dans le projet.",
         "rebuild_textures_and_share_matching_uvs": "Reconstruire les textures et mutualiser les UV identiques",
-        "fewer_texture_pixels": " % de pixels de texture en moins.",
         "optimize_texture_and_uvs": "Optimiser la texture et les UV",
         "merge_textures_into_atlas": "Fusionner les textures en un atlas",
         "optimize_texture_variants": "Optimiser les variantes de texture",
@@ -98,7 +97,7 @@
         "watermark_font": "Police du filigrane",
         "fonts_installed_on_this_computer_including_custom_fonts": "Polices installées sur cet ordinateur, y compris les polices personnalisées.",
         "enable_texture_uv_optimization": "Activer l’optimisation des textures et des UV",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, mutualiser les régions UV identiques et réduire les dimensions lorsque c’est possible.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, et mutualiser les régions UV identiques en conservant au minimum les dimensions d’origine.",
         "power_of_two_texture_atlas": "Texture carrée en puissance de deux",
         "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Utiliser des dimensions carrées de 16, 32, 64, etc. Si cette option est désactivée, utiliser des multiples de 16, comme le générateur natif sans l’option « Puissance de deux ».",
         "enable_inverted_cubes": "Activer les cubes inversés",
@@ -150,7 +149,7 @@
         "no_compatible_square_layout_found_with_the_same_pixels_and_borde": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et un espacement transparent de 1 px",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture compatible n’a pu être reconstruite avec un espacement transparent de 1 px. Les textures et les UV d’origine ont été conservés.",
         "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
-        "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions conservées : la reconstruction ne nécessite pas de réduire la texture.",
+        "original_texture_dimensions_preserved": "Dimensions d’origine conservées.",
         "texture_grown_for_padding": "Texture agrandie pour conserver tous les pixels des faces et ajouter l’espacement transparent de 1 px.",
         "transparent_faces_disabled": "Faces entièrement transparentes rendues invisibles : ",
         "uv_regions": "\nRégions UV : ",
@@ -263,7 +262,6 @@
         "incompatible_backup_preserved": "This backup no longer matches the current project. It has been kept without being applied. You can optimize again using the current textures and UVs.",
         "previous_backups_preserved": "Restoring returns to the state just before this optimization. Earlier backups remain in the project.",
         "rebuild_textures_and_share_matching_uvs": "Rebuild textures and share matching UVs",
-        "fewer_texture_pixels": "% fewer texture pixels.",
         "optimize_texture_and_uvs": "Optimize texture and UVs",
         "merge_textures_into_atlas": "Merge textures into one atlas",
         "optimize_texture_variants": "Optimize texture variants",
@@ -323,7 +321,7 @@
         "watermark_font": "Watermark font",
         "fonts_installed_on_this_computer_including_custom_fonts": "Fonts installed on this computer, including custom fonts.",
         "enable_texture_uv_optimization": "Enable texture and UV optimization",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, share identical UV regions and reduce dimensions when possible.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, and share identical UV regions while keeping at least the original dimensions.",
         "power_of_two_texture_atlas": "Power of two square texture",
         "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Use square sizes of 16, 32, 64, etc. When disabled, use multiples of 16, like the native generator without Power of two enabled.",
         "enable_inverted_cubes": "Enable inverted cubes",
@@ -375,7 +373,7 @@
         "no_compatible_square_layout_found_with_the_same_pixels_and_borde": ": no compatible square layout was found with the same pixels and 1 px of transparent spacing",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "No compatible texture could be rebuilt with 1 px of transparent spacing. Original textures and UVs have been preserved.",
         "texture_repacking_was_cancelled": "Texture repacking was cancelled. ",
-        "dimensions_preserved_rebuilding_does_not_require_a_smaller_textu": "Dimensions preserved: rebuilding does not require a smaller texture.",
+        "original_texture_dimensions_preserved": "Original texture dimensions preserved.",
         "texture_grown_for_padding": "Texture enlarged to preserve all face pixels and add 1 px of transparent spacing.",
         "transparent_faces_disabled": "Fully transparent faces made invisible: ",
         "uv_regions": "\nUV regions: ",
@@ -1548,10 +1546,10 @@
         };
     }
 
-    function find_padded_layout(source, regions, power, fixed_size, frame_ratio) {
+    function find_padded_layout(source, regions, {power, fixed_size, frame_ratio, minimum_size = [source.width, source.frame_height]}) {
         const area = regions.reduce((total, region) => total + (region.width + 1) * (region.height + 1), 0);
-        const min_width = regions.reduce((width, region) => Math.max(width, region.width + 2), 1);
-        const min_height = regions.reduce((height, region) => Math.max(height, region.height + 2), 1);
+        const min_width = regions.reduce((width, region) => Math.max(width, region.width + 2), minimum_size[0]);
+        const min_height = regions.reduce((height, region) => Math.max(height, region.height + 2), minimum_size[1]);
         const {width: max_width, height: max_height, area: max_area} = source.layout_limits || atlas_layout_limits(source.frame_count);
         if (min_width > max_width || min_height > max_height || area > max_area) return null;
         const budget = {remaining: 16000000};
@@ -1615,9 +1613,9 @@
         return best;
     }
 
-    function plan_padded_texture(source, entries, {power, unique_faces = false, fixed_size, frame_ratio, extra_regions = []}) {
+    function plan_padded_texture(source, entries, {unique_faces = false, extra_regions = [], ...layout_options}) {
         const regions = [...new Set([...entries.map(entry => unique_faces ? entry.region : entry.region.target), ...extra_regions])];
-        const layout = find_padded_layout(source, regions, power, fixed_size, frame_ratio);
+        const layout = find_padded_layout(source, regions, layout_options);
         return layout ? bake_padded_texture(source, layout) : null;
     }
 
@@ -1851,7 +1849,7 @@
             atlas_message(dimensions + '\n\n' + translate('independent_uvs_created') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
             return result;
         }
-        const dimensions_message = result.reduction > 0 ? (result.reduction * 100).toLocaleString('fr-FR', {maximumFractionDigits: 1}) + translate('fewer_texture_pixels') : translate(result.reduction < 0 ? 'texture_grown_for_padding' : 'dimensions_preserved_rebuilding_does_not_require_a_smaller_textu');
+        const dimensions_message = translate(atlas_pixels > original_pixels ? 'texture_grown_for_padding' : 'original_texture_dimensions_preserved');
         atlas_message(dimensions + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (box_layouts ? translate('box_uv_modes_preserved') : '') + (shared_uv_plan ? '\n\n' + translate('atlas_variants_shared_layout') : '') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
@@ -1904,7 +1902,7 @@
         const hidden_entries = entries.filter(entry => entry.transparent);
         const regions = [...new Set(visible_entries.map(entry => entry.region.target))];
         const power = !!plugin_settings.atlas_power.value || textures.some(texture => texture.wrap_mode === 'repeat');
-        const layout = find_padded_layout(shared, regions, power);
+        const layout = find_padded_layout(shared, regions, {power});
         if (!layout) throw new Error(translate('no_compatible_square_texture_could_be_rebuilt_without_enlargemen'));
         const box_scale = visible_entries.find(entry => entry.box_layout)?.scale || [1, 1];
         const uv_width = layout.width / box_scale[0];
@@ -2060,7 +2058,8 @@
             region.target = region;
             unused_regions.push(region);
         }
-        const playback = merge_flipbook_frames([...sources.values()]);
+        const source_frames = [...sources.values()];
+        const playback = merge_flipbook_frames(source_frames);
         scale_box_regions(box_entries, box_scale, playback.frame_count);
         const visible = entries.filter(entry => !entry.transparent);
         const hashes = new Map();
@@ -2070,7 +2069,11 @@
             share_matching_region(region, is_box ? box_hashes : hashes, !is_box);
         }
         const power = !!plugin_settings.atlas_power.value || first.wrap_mode === 'repeat';
-        const plan = plan_padded_texture(playback, visible, {power, extra_regions: unused_regions});
+        const minimum_size = [
+            Math.max(...source_frames.map(source => source.width)),
+            Math.max(...source_frames.map(source => source.frame_height))
+        ];
+        const plan = plan_padded_texture(playback, visible, {power, minimum_size, extra_regions: unused_regions});
         if (!plan) throw new Error(translate(playback.frame_count > 1 ? 'atlas_merge_animation_too_large'
             : 'no_compatible_square_texture_could_be_rebuilt_without_enlargemen'));
         const uv_width = plan.width / box_scale[0];
@@ -3886,7 +3889,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.9.1',
+        version: '3.9.2',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
