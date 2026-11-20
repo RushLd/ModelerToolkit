@@ -97,9 +97,9 @@
         "watermark_font": "Police du filigrane",
         "fonts_installed_on_this_computer_including_custom_fonts": "Polices installées sur cet ordinateur, y compris les polices personnalisées.",
         "enable_texture_uv_optimization": "Activer l’optimisation des textures et des UV",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, et mutualiser les régions UV identiques en conservant la résolution UV et la densité des pixels du modèle.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, et mutualiser les régions UV identiques en conservant la densité des pixels du modèle.",
         "power_of_two_texture_atlas": "Texture carrée en puissance de deux",
-        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Pour la fusion et les UV indépendants, utiliser des dimensions carrées de 16, 32, 64, etc. quand le format le permet. Sinon, privilégier les multiples de 16.",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Utiliser des dimensions carrées de 16, 32, 64, etc. quand le format et la densité le permettent. Option désactivée, privilégier les multiples de 16.",
         "enable_inverted_cubes": "Activer les cubes inversés",
         "create_inward_facing_copies_named_name_inverted": "Créer des copies aux faces orientées vers l’intérieur, nommées <nom>_inverted.",
         "enable_outlines": "Activer les contours",
@@ -147,7 +147,7 @@
         "some_uvs_or_element_types_require_the_original_layout": " : certains UV ou types d’éléments nécessitent la disposition d’origine",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture compatible n’a pu être reconstruite avec un espacement transparent de 1 px. Les textures et les UV d’origine ont été conservés.",
         "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
-        "model_uv_density_preserved": "Résolution UV et densité des pixels du modèle conservées.",
+        "model_uv_density_preserved": "Densité des pixels conservée. La résolution UV suit la taille de l’image.",
         "layout_does_not_fit_original_density": "Le placement avec 1 px transparent ne tient pas à la densité d’origine.",
         "transparent_faces_disabled": "Faces entièrement transparentes rendues invisibles : ",
         "uv_regions": "\nRégions UV : ",
@@ -319,9 +319,9 @@
         "watermark_font": "Watermark font",
         "fonts_installed_on_this_computer_including_custom_fonts": "Fonts installed on this computer, including custom fonts.",
         "enable_texture_uv_optimization": "Enable texture and UV optimization",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, and share identical UV regions while keeping the model’s UV resolution and pixel density.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, and share identical UV regions while keeping the model’s pixel density.",
         "power_of_two_texture_atlas": "Power of two square texture",
-        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "For merging and independent UVs, use square sizes of 16, 32, 64, etc. when the format allows it. Otherwise, prefer multiples of 16.",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Use square sizes of 16, 32, 64, etc. when the format and pixel density allow it. When disabled, prefer multiples of 16.",
         "enable_inverted_cubes": "Enable inverted cubes",
         "create_inward_facing_copies_named_name_inverted": "Create copies with inward facing surfaces, named <name>_inverted.",
         "enable_outlines": "Enable outlines",
@@ -369,7 +369,7 @@
         "some_uvs_or_element_types_require_the_original_layout": ": some UVs or element types require the original layout",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "No compatible texture could be rebuilt with 1 px of transparent spacing. Original textures and UVs have been preserved.",
         "texture_repacking_was_cancelled": "Texture repacking was cancelled. ",
-        "model_uv_density_preserved": "Preserved the model’s UV resolution and pixel density.",
+        "model_uv_density_preserved": "Pixel density preserved. The UV resolution follows the image size.",
         "layout_does_not_fit_original_density": "The layout with 1 px of transparent spacing does not fit at the original pixel density.",
         "transparent_faces_disabled": "Fully transparent faces made invisible: ",
         "uv_regions": "\nUV regions: ",
@@ -1542,7 +1542,7 @@
         };
     }
 
-    function find_padded_layout(source, regions, {power, fixed_size, frame_ratio}) {
+    function find_padded_layout(source, regions, {power, fixed_size, frame_ratio, allow_size}) {
         const area = regions.reduce((total, region) => total + (region.width + 1) * (region.height + 1), 0);
         const min_width = regions.reduce((width, region) => Math.max(width, region.width + 2), 1);
         const min_height = regions.reduce((height, region) => Math.max(height, region.height + 2), 1);
@@ -1555,6 +1555,7 @@
             regions.slice().sort((first, second) => second.height - first.height || second.width - first.width)
         ];
         const try_layout = (width, frame_height) => {
+            if (allow_size && !allow_size(width, frame_height)) return null;
             for (const ordered of orders) {
                 const placements = fit_padded_regions(ordered, width, frame_height, budget);
                 if (placements) return {width, frame_height, placements};
@@ -1702,6 +1703,51 @@
         }
     }
 
+    function texture_frame_grid(source) {
+        const uv_width = source.texture.getUVWidth();
+        const uv_height = source.texture.getUVHeight();
+        const dimensions = (width, frame_height) => [
+            width * uv_width / source.width, frame_height * uv_height / source.frame_height
+        ];
+        const frame_ratio = Format.animated_textures && uv_width !== uv_height ? [uv_width, uv_height] : null;
+        const fixed_mcmeta = frame_ratio && Format.texture_mcmeta && source.frame_count > 1;
+        return {uv_width, uv_height, dimensions, frame_ratio, fixed_mcmeta};
+    }
+
+    function plan_texture_repack({source, entries, hidden_entries}, unique_faces, target_grid) {
+        const {texture} = source;
+        const grid = texture_frame_grid(source);
+        const original_size = [source.width, source.frame_height];
+        const power = !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat';
+        let options = {power, unique_faces};
+        const dimensions = unique_faces ? () => [grid.uv_width, grid.uv_height] : grid.dimensions;
+        if (target_grid) {
+            const fixed_size = [target_grid[0] * source.width / grid.uv_width, target_grid[1] * source.frame_height / grid.uv_height];
+            if (fixed_size.some(value => !Number.isSafeInteger(value) || value < 1) ||
+                (grid.fixed_mcmeta && fixed_size.some((value, index) => value !== original_size[index]))) return null;
+            options.fixed_size = fixed_size;
+        } else if (unique_faces) {
+            if (grid.frame_ratio?.some(value => !Number.isSafeInteger(value) || value < 1)) options.fixed_size = original_size;
+            else options.frame_ratio = grid.frame_ratio;
+        } else if (grid.fixed_mcmeta) {
+            options.fixed_size = original_size;
+        } else {
+            options.allow_size = (width, height) => grid.dimensions(width, height).every(value => Number.isSafeInteger(value) && value > 0);
+        }
+        let plan = plan_padded_texture(source, entries, options);
+        if (!plan && !unique_faces && !target_grid && !options.fixed_size) {
+            plan = plan_padded_texture(source, entries, {fixed_size: original_size});
+        }
+        if (!plan) return null;
+        const [uv_width, uv_height] = dimensions(plan.width, plan.frame_height);
+        const candidate = Object.create(texture, {
+            width: {value: plan.width}, height: {value: plan.height},
+            getUVWidth: {value: () => uv_width}, getUVHeight: {value: () => uv_height}
+        });
+        if ((candidate.frameCount || 1) !== source.frame_count) return null;
+        return {...plan, entries, hidden_entries, uv_width, uv_height};
+    }
+
     function optimize_texture_atlas(unique_faces = false) {
         if (!Project) return;
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_rebuilding_textures'));
@@ -1721,7 +1767,7 @@
                 if (!grouped.has(texture)) grouped.set(texture, []);
                 grouped.get(texture).push(entry);
             });
-            plans = [];
+            const candidates = [];
             for (const [texture, entries] of grouped) {
                 let references = 0;
                 let unsupported = false;
@@ -1733,34 +1779,31 @@
                     skipped.push(texture.name + translate('some_uvs_or_element_types_require_the_original_layout'));
                     continue;
                 }
-                const hidden_entries = unique_faces ? [] : entries.filter(entry => entry.transparent);
-                const visible_entries = entries.filter(entry => !entry.transparent);
-                const source = entries[0].region.source;
-                const uv_width = texture.getUVWidth();
-                const uv_height = texture.getUVHeight();
-                const frame_ratio = Format.animated_textures && uv_width !== uv_height ? [uv_width, uv_height] : null;
-                const keep_size = !unique_faces || frame_ratio?.some(size => !Number.isInteger(size) || size < 1);
-                const plan = plan_padded_texture(source, visible_entries, {
-                    power: !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat', unique_faces,
-                    fixed_size: keep_size ? [source.width, source.frame_height] : null, frame_ratio
+                candidates.push({
+                    source: entries[0].region.source, entries: entries.filter(entry => !entry.transparent),
+                    hidden_entries: unique_faces ? [] : entries.filter(entry => entry.transparent)
                 });
-                if (!plan) {
-                    const reason = unique_faces ? 'independent_uvs_unavailable' : 'layout_does_not_fit_original_density';
-                    skipped.push(texture.name + ' - ' + translate(reason));
-                    continue;
-                }
-                const candidate = Object.create(texture, {
-                    width: {value: plan.width},
-                    height: {value: plan.height},
-                    getUVWidth: {value: () => uv_width},
-                    getUVHeight: {value: () => uv_height}
-                });
-                if ((candidate.frameCount || 1) !== source.frame_count) {
-                    skipped.push(texture.name + ' : ' + translate('flipbook_frame_layout_incompatible'));
-                    continue;
-                }
-                plans.push({...plan, entries: visible_entries, hidden_entries, uv_width, uv_height});
             }
+
+            const proposed = candidates.map(candidate => plan_texture_repack(candidate, unique_faces));
+            const original_grid = [Project.texture_width, Project.texture_height];
+            if (!unique_faces && !Format.per_texture_uv_size && Texture.all.length > 1) {
+                const shared_grid = candidates.length === Texture.all.length && proposed.every(plan => plan)
+                    ? [Math.max(...proposed.map(plan => plan.uv_width)), Math.max(...proposed.map(plan => plan.uv_height))]
+                    : null;
+                const aligned = shared_grid && proposed.map((plan, index) => plan.uv_width === shared_grid[0] && plan.uv_height === shared_grid[1]
+                    ? plan : plan_texture_repack(candidates[index], false, shared_grid));
+                plans = aligned?.every(plan => plan) ? aligned
+                    : candidates.map(candidate => plan_texture_repack(candidate, false, original_grid));
+            } else {
+                plans = proposed;
+            }
+            plans = plans.filter((plan, index) => {
+                if (plan) return true;
+                const reason = unique_faces ? 'independent_uvs_unavailable' : 'layout_does_not_fit_original_density';
+                skipped.push(candidates[index].source.texture.name + ' - ' + translate(reason));
+                return false;
+            });
         } catch (error) {
             return atlas_message(translate('no_changes_were_made') + error_message(error), true);
         }
@@ -1792,14 +1835,16 @@
         const affected_entries = uv_plans.flatMap(plan => [...plan.entries, ...plan.hidden_entries]);
         const elements = [...new Set(affected_entries.map(entry => entry.element))];
         const textures = plans.map(plan => plan.source.texture);
+        const new_project_grid = Format.per_texture_uv_size ? [Project.texture_width, Project.texture_height]
+            : [plans[0].uv_width, plans[0].uv_height];
         const backup = {
             version: 3,
             mode,
             format: Format.id,
             width: Project.texture_width,
             height: Project.texture_height,
-            optimized_width: Project.texture_width,
-            optimized_height: Project.texture_height,
+            optimized_width: new_project_grid[0],
+            optimized_height: new_project_grid[1],
             previous_backup,
             textures: textures.map(texture => ({...texture.getUndoCopy(true), image_data: texture.canvas.toDataURL('image/png')})),
             optimized_textures: plans.map(plan => ({uuid: plan.source.texture.uuid, width: plan.width, height: plan.height})),
@@ -1809,6 +1854,7 @@
         const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
         Undo.initEdit(aspects);
         try {
+            [Project.texture_width, Project.texture_height] = new_project_grid;
             for (const plan of plans) {
                 write_atlas_bitmap(plan.source.texture, atlas_data_url(plan), plan);
             }
@@ -1886,10 +1932,14 @@
         const visible_entries = entries.filter(entry => !entry.transparent);
         const hidden_entries = entries.filter(entry => entry.transparent);
         const regions = [...new Set(visible_entries.map(entry => entry.region.target))];
-        const uv_width = reference.getUVWidth();
-        const uv_height = reference.getUVHeight();
-        const layout = find_padded_layout(shared, regions, {fixed_size: [shared.width, shared.frame_height]});
+        const grid = texture_frame_grid(shared);
+        const original_size = [shared.width, shared.frame_height];
+        const power = !!plugin_settings.atlas_power.value || textures.some(texture => texture.wrap_mode === 'repeat');
+        const layout = (!grid.fixed_mcmeta && find_padded_layout(shared, regions, {
+            power, allow_size: (width, height) => grid.dimensions(width, height).every(value => Number.isSafeInteger(value) && value > 0)
+        })) || find_padded_layout(shared, regions, {fixed_size: original_size});
         if (!layout) throw new Error(translate('layout_does_not_fit_original_density'));
+        const [uv_width, uv_height] = grid.dimensions(layout.width, layout.frame_height);
         const plans = variants.map(({source, scale}, index) => {
             const width = layout.width * scale;
             const frame_height = layout.frame_height * scale;
@@ -3873,7 +3923,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.9.4',
+        version: '3.9.5',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
