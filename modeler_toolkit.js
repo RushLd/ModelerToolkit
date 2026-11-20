@@ -97,9 +97,9 @@
         "watermark_font": "Police du filigrane",
         "fonts_installed_on_this_computer_including_custom_fonts": "Polices installées sur cet ordinateur, y compris les polices personnalisées.",
         "enable_texture_uv_optimization": "Activer l’optimisation des textures et des UV",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, et mutualiser les régions UV identiques en conservant la résolution UV du modèle.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Reconstruire les textures, y compris les flipbooks compatibles, et mutualiser les régions UV identiques en conservant la résolution UV et la densité des pixels du modèle.",
         "power_of_two_texture_atlas": "Texture carrée en puissance de deux",
-        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Utiliser des dimensions carrées de 16, 32, 64, etc. Si cette option est désactivée, utiliser des multiples de 16, comme le générateur natif sans l’option « Puissance de deux ».",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Pour la fusion et les UV indépendants, utiliser des dimensions carrées de 16, 32, 64, etc. quand le format le permet. Sinon, privilégier les multiples de 16.",
         "enable_inverted_cubes": "Activer les cubes inversés",
         "create_inward_facing_copies_named_name_inverted": "Créer des copies aux faces orientées vers l’intérieur, nommées <nom>_inverted.",
         "enable_outlines": "Activer les contours",
@@ -135,7 +135,6 @@
         "layered_or_material_textures_preserved": "Textures à calques ou associées à un matériau conservées",
         "animated_textures_preserved_when_separating_uvs": "Textures animées conservées lors de la séparation des UV",
         "flipbooks_with_fractional_frame_heights_preserved": "Flipbooks conservés car la hauteur de leurs images n’est pas un nombre entier de pixels",
-        "flipbook_layout_does_not_fit": " : les images du flipbook ne tiennent pas dans les limites de taille avec un espacement transparent de 1 px",
         "flipbook_frame_layout_incompatible": "La disposition modifierait le nombre d’images de la texture.",
         "flipbook_frames_preserved": " images conservées",
         "textures_exceeding_the_safe_comparison_size": "Textures dépassant la taille limite de comparaison",
@@ -146,13 +145,10 @@
         "finish_the_current_edit_or_recording_before_rebuilding_textures": "Terminez la modification ou l’enregistrement en cours avant de reconstruire les textures.",
         "layered_texture_compositing_is_active_the_texture_stack_was_pres": "La composition des textures par calques est active. La pile de textures a été conservée.",
         "some_uvs_or_element_types_require_the_original_layout": " : certains UV ou types d’éléments nécessitent la disposition d’origine",
-        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": " : aucune disposition carrée compatible trouvée avec les mêmes pixels et un espacement transparent de 1 px",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "Aucune texture compatible n’a pu être reconstruite avec un espacement transparent de 1 px. Les textures et les UV d’origine ont été conservés.",
         "texture_repacking_was_cancelled": "La réorganisation des textures a été annulée. ",
-        "original_texture_dimensions_preserved": "Dimensions du PNG conservées.",
-        "texture_image_compacted": "PNG compacté en mutualisant les régions UV.",
-        "model_uv_resolution_preserved": "Résolution UV du modèle conservée.",
-        "texture_grown_for_padding": "Texture agrandie pour conserver tous les pixels des faces et ajouter l’espacement transparent de 1 px.",
+        "model_uv_density_preserved": "Résolution UV et densité des pixels du modèle conservées.",
+        "layout_does_not_fit_original_density": "Le placement avec 1 px transparent ne tient pas à la densité d’origine.",
         "transparent_faces_disabled": "Faces entièrement transparentes rendues invisibles : ",
         "uv_regions": "\nRégions UV : ",
         "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nLes régions identiques sont fusionnées, y compris après rotation ou retournement. Seuls les pixels utilisés par les faces sont recopiés, avec 1 px transparent autour des régions UV. Les UV sont adaptés pour préserver le rendu et l’orientation des faces. Aucun rééchantillonnage ni lissage de l’image.\n\nUtilisez « Annuler » ou « Restaurer les textures et UV d’origine » pour revenir en arrière. Les fichiers image existants ne sont pas écrasés automatiquement.",
@@ -323,9 +319,9 @@
         "watermark_font": "Watermark font",
         "fonts_installed_on_this_computer_including_custom_fonts": "Fonts installed on this computer, including custom fonts.",
         "enable_texture_uv_optimization": "Enable texture and UV optimization",
-        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, and share identical UV regions while keeping the model’s UV resolution.",
+        "rebuild_a_clean_square_texture_share_identical_uv_regions_and_re": "Rebuild textures, including compatible flipbooks, and share identical UV regions while keeping the model’s UV resolution and pixel density.",
         "power_of_two_texture_atlas": "Power of two square texture",
-        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "Use square sizes of 16, 32, 64, etc. When disabled, use multiples of 16, like the native generator without Power of two enabled.",
+        "use_square_sizes_16_32_64_etc_disabled_uses_square_multiples_of": "For merging and independent UVs, use square sizes of 16, 32, 64, etc. when the format allows it. Otherwise, prefer multiples of 16.",
         "enable_inverted_cubes": "Enable inverted cubes",
         "create_inward_facing_copies_named_name_inverted": "Create copies with inward facing surfaces, named <name>_inverted.",
         "enable_outlines": "Enable outlines",
@@ -361,7 +357,6 @@
         "layered_or_material_textures_preserved": "Layered or material textures preserved",
         "animated_textures_preserved_when_separating_uvs": "Animated textures preserved when separating UVs",
         "flipbooks_with_fractional_frame_heights_preserved": "Flipbooks with fractional pixel frame heights preserved",
-        "flipbook_layout_does_not_fit": ": the flipbook frames do not fit within the texture size limits with 1 px of transparent spacing",
         "flipbook_frame_layout_incompatible": "The layout would change the texture’s frame count.",
         "flipbook_frames_preserved": " frames preserved",
         "textures_exceeding_the_safe_comparison_size": "Textures exceeding the safe comparison size",
@@ -372,13 +367,10 @@
         "finish_the_current_edit_or_recording_before_rebuilding_textures": "Finish the current edit or recording before rebuilding textures.",
         "layered_texture_compositing_is_active_the_texture_stack_was_pres": "Layered texture compositing is active. The texture stack has been preserved.",
         "some_uvs_or_element_types_require_the_original_layout": ": some UVs or element types require the original layout",
-        "no_compatible_square_layout_found_with_the_same_pixels_and_borde": ": no compatible square layout was found with the same pixels and 1 px of transparent spacing",
         "no_compatible_square_texture_could_be_rebuilt_without_enlargemen": "No compatible texture could be rebuilt with 1 px of transparent spacing. Original textures and UVs have been preserved.",
         "texture_repacking_was_cancelled": "Texture repacking was cancelled. ",
-        "original_texture_dimensions_preserved": "Original PNG dimensions preserved.",
-        "texture_image_compacted": "Compacted the PNG by sharing UV regions.",
-        "model_uv_resolution_preserved": "Preserved the model’s UV resolution.",
-        "texture_grown_for_padding": "Texture enlarged to preserve all face pixels and add 1 px of transparent spacing.",
+        "model_uv_density_preserved": "Preserved the model’s UV resolution and pixel density.",
+        "layout_does_not_fit_original_density": "The layout with 1 px of transparent spacing does not fit at the original pixel density.",
         "transparent_faces_disabled": "Fully transparent faces made invisible: ",
         "uv_regions": "\nUV regions: ",
         "identical_regions_are_shared_including_rotated_or_mirrored_match": "\n\nIdentical regions are shared, including rotated or mirrored matches. Only pixels used by faces are copied, with 1 px of transparent spacing around UV regions. UVs are adjusted to preserve face appearance and orientation. No image resampling or smoothing.\n\nUse Undo or Restore original textures and UVs to go back. Existing image files are not overwritten automatically.",
@@ -1710,14 +1702,6 @@
         }
     }
 
-    function preserve_uv_layout(source, uv_width, uv_height, box_uv) {
-        const frame_ratio = Format.animated_textures && uv_width !== uv_height ? [uv_width, uv_height] : null;
-        const fixed_size = box_uv || (frame_ratio && Format.texture_mcmeta && source.frame_count > 1) ||
-            frame_ratio?.some(size => !Number.isInteger(size) || size < 1)
-            ? [source.width, source.frame_height] : null;
-        return {fixed_size, frame_ratio};
-    }
-
     function optimize_texture_atlas(unique_faces = false) {
         if (!Project) return;
         if (active_session || Undo.current_save) return atlas_message(translate('finish_the_current_edit_or_recording_before_rebuilding_textures'));
@@ -1752,16 +1736,17 @@
                 const hidden_entries = unique_faces ? [] : entries.filter(entry => entry.transparent);
                 const visible_entries = entries.filter(entry => !entry.transparent);
                 const source = entries[0].region.source;
-                const box_uv = entries.some(entry => entry.box_layout);
                 const uv_width = texture.getUVWidth();
                 const uv_height = texture.getUVHeight();
+                const frame_ratio = Format.animated_textures && uv_width !== uv_height ? [uv_width, uv_height] : null;
+                const keep_size = !unique_faces || frame_ratio?.some(size => !Number.isInteger(size) || size < 1);
                 const plan = plan_padded_texture(source, visible_entries, {
-                    power: !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat',
-                    unique_faces, ...preserve_uv_layout(source, uv_width, uv_height, box_uv)
+                    power: !!plugin_settings.atlas_power.value || texture.wrap_mode === 'repeat', unique_faces,
+                    fixed_size: keep_size ? [source.width, source.frame_height] : null, frame_ratio
                 });
                 if (!plan) {
-                    const reason = source.frame_count > 1 ? 'flipbook_layout_does_not_fit' : 'no_compatible_square_layout_found_with_the_same_pixels_and_borde';
-                    skipped.push(unique_faces ? texture.name + ' : ' + translate('independent_uvs_unavailable') : texture.name + translate(reason));
+                    const reason = unique_faces ? 'independent_uvs_unavailable' : 'layout_does_not_fit_original_density';
+                    skipped.push(texture.name + ' - ' + translate(reason));
                     continue;
                 }
                 const candidate = Object.create(texture, {
@@ -1850,9 +1835,7 @@
             atlas_message(dimensions + '\n\n' + translate('independent_uvs_created') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
             return result;
         }
-        const dimensions_message = translate(atlas_pixels < original_pixels ? 'texture_image_compacted'
-            : atlas_pixels > original_pixels ? 'texture_grown_for_padding' : 'original_texture_dimensions_preserved');
-        atlas_message(dimensions + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + dimensions_message + '\n' + translate('model_uv_resolution_preserved') + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (box_layouts ? translate('box_uv_modes_preserved') : '') + (shared_uv_plan ? '\n\n' + translate('atlas_variants_shared_layout') : '') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
+        atlas_message(dimensions + translate('uv_regions') + regions_before + ' → ' + regions_after + '.\n' + translate('model_uv_density_preserved') + (faces_disabled ? '\n' + translate('transparent_faces_disabled') + faces_disabled + '.' : '') + translate('identical_regions_are_shared_including_rotated_or_mirrored_match') + (box_layouts ? translate('box_uv_modes_preserved') : '') + (shared_uv_plan ? '\n\n' + translate('atlas_variants_shared_layout') : '') + (previous_backup.version ? '\n\n' + translate('previous_backups_preserved') : '') + (skipped.length ? '\n\n' + skipped.join('\n') : ''));
         return result;
     }
 
@@ -1903,12 +1886,10 @@
         const visible_entries = entries.filter(entry => !entry.transparent);
         const hidden_entries = entries.filter(entry => entry.transparent);
         const regions = [...new Set(visible_entries.map(entry => entry.region.target))];
-        const power = !!plugin_settings.atlas_power.value || textures.some(texture => texture.wrap_mode === 'repeat');
         const uv_width = reference.getUVWidth();
         const uv_height = reference.getUVHeight();
-        const box_uv = visible_entries.some(entry => entry.box_layout);
-        const layout = find_padded_layout(shared, regions, {power, ...preserve_uv_layout(shared, uv_width, uv_height, box_uv)});
-        if (!layout) throw new Error(translate('no_compatible_square_texture_could_be_rebuilt_without_enlargemen'));
+        const layout = find_padded_layout(shared, regions, {fixed_size: [shared.width, shared.frame_height]});
+        if (!layout) throw new Error(translate('layout_does_not_fit_original_density'));
         const plans = variants.map(({source, scale}, index) => {
             const width = layout.width * scale;
             const frame_height = layout.frame_height * scale;
@@ -3892,7 +3873,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.9.3',
+        version: '3.9.4',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
