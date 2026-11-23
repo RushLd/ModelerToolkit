@@ -1,139 +1,61 @@
 # Modeler Toolkit
 
-Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
-
-Version actuelle : **3.10.0**.
+Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter des contours aux modèles et personnaliser les rendus GIF.
 
 ## Installation
 
-1. Ouvrez **Fichier > Plugins** dans Blockbench.
-2. Choisissez **Charger un plugin depuis une URL** et collez cette adresse :
+1. Dans Blockbench 5.2 ou plus récent, ouvrez **Fichier > Plugins**.
+2. Cliquez sur l’icône en forme de nuage **Charger un plugin via une URL**.
+3. Cliquez sur l’icône de copie en haut à droite du bloc ci-dessous, puis collez l’adresse dans le champ **URL** de Blockbench.
 
    ```text
    https://raw.githubusercontent.com/RushLd/ModelerToolkit/main/modeler_toolkit.js
    ```
 
-3. Retrouvez les outils dans le menu **Modeler Toolkit**. Les options de capture apparaissent également dans la fenêtre d’enregistrement GIF.
+4. Validez, confirmez l’installation, puis relancez Blockbench.
 
-Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js), puis utiliser **Charger un plugin depuis un fichier**. Installez une seule copie. Ce dépôt est distribué indépendamment du catalogue officiel de Blockbench.
+## Fonctionnalités
 
-## Modèles d’aperçu personnalisés
+- **Optimiser la texture et les UV** - Réutilise les mêmes pixels pour les faces identiques, même retournées, et masque les faces entièrement transparentes. Compatible avec les textures animées.
+- **Optimiser les variantes de texture** - Réorganise ensemble les textures interchangeables pour qu’elles continuent de s’appliquer aux mêmes faces.
+- **Fusionner les textures en un atlas** - Regroupe les textures du modèle dans une seule image, animée si nécessaire.
+- **Créer une texture avec des UV indépendants** - Donne à chaque face sa propre zone pour la peindre séparément.
+- **Restaurer les textures et UV d’origine** - Revient à la dernière sauvegarde des textures et de leur placement sur le modèle.
+- **Restaurer les UV d’origine** - Rétablit le placement de la texture sur les faces sélectionnées si une sauvegarde existe.
+- **Créer des cubes inversés** - Duplique les cubes sélectionnés pour rendre leurs faces visibles de l’intérieur.
+- **Créer des contours** - Ajoute un contour réglable autour des éléments sélectionnés.
+- **Afficher / masquer les calques** - Affiche ou masque les éléments dont le nom contient `_layer`, avec un raccourci configurable.
+- **Modèles d’aperçu personnalisés** - Importez vos fichiers `.bbmodel` et leurs textures dans les paramètres, puis affichez-les depuis le clic droit dans la vue 3D. La bibliothèque reste en place après redémarrage.
+- **Enregistrer un GIF** - Choisissez une ou plusieurs animations dans la fenêtre d’enregistrement, même en dehors du mode Animer.
+- **Aperçu du rendu GIF** - Affiche une image fixe avec le cadrage et les réglages de la capture.
+- **Ombre dynamique / Rendu propre** - Projette une ombre réglable et limite les bavures de pixels sur les bords des faces.
+- **Éclairage personnalisé** - Règle la direction, la hauteur, la teinte et l’intensité de la lumière, ainsi que l’éclairage ambiant.
+- **Sol de rendu** - Ajoute un sol temporaire uni ou en dalles pour recevoir l’ombre.
+- **Afficher les images de référence** - Inclut les images de référence visibles dans l’aperçu et le GIF.
+- **Filigrane** - Ajoute une ligne de texte avec une police, une couleur, une taille et une position au choix.
+- **Paramètres de Modeler Toolkit** - Choisissez le français ou l’anglais et définissez vos réglages de rendu par défaut. La fenêtre GIF mémorise vos choix et permet de reprendre les valeurs du plugin.
 
-Dans **Fichier > Plugins > Modeler Toolkit > Settings**, ouvrez **Modèles d’aperçu personnalisés**. Importez un `.bbmodel`. Blockbench Desktop peut retrouver les textures liées sur le disque. Vous pouvez aussi sélectionner leurs images en même temps que le modèle, notamment dans la version web de Blockbench.
+## Guide rapide
 
-Dans la vue 3D, faites un clic droit sur une zone vide, puis ouvrez **Modèles d’aperçu**. Votre modèle apparaît à côté des références natives. Vous pouvez l’afficher, le masquer, le déplacer, le tourner et ajuster son échelle avec les commandes de Blockbench.
+### Optimiser, fusionner ou séparer les textures
 
-La bibliothèque garde la géométrie visible en pose fixe et ses textures sur cet appareil. Elle reste disponible après redémarrage, y compris si vous déplacez les fichiers source. Utilisez les paramètres du plugin pour renommer ou retirer une référence. Les aperçus restent séparés de l’Outliner et du modèle de travail.
+- **Optimiser la texture et les UV** réorganise les zones utilisées et partage les motifs identiques. Le plugin conserve la résolution UV et laisse au moins 1 pixel transparent entre les zones distinctes.
+- **Optimiser les variantes de texture** applique la même disposition à plusieurs versions interchangeables d’une texture. Chaque version conserve sa propre image.
+- **Fusionner les textures en un atlas** rassemble plusieurs textures dans une seule image. Si elles sont animées, la fusion est possible lorsque le plugin peut reproduire leurs boucles d’origine.
+- **Créer une texture avec des UV indépendants** donne à chaque face une zone à peindre. Cette option est utile si une retouche doit s’appliquer à une seule face.
 
-## À quoi sert chaque bouton ?
+Après un changement, **Restaurer les textures et UV d’origine** remonte d’une étape. Le fichier `.bbmodel` conserve les sauvegardes lorsque vous enregistrez le projet.
 
-Dans **Fichier > Plugins > Modeler Toolkit > Settings**, le sélecteur **Langue / Language** applique et mémorise immédiatement le choix **Français** ou **English**. La fiche ouverte, les menus du plugin et les options GIF s’actualisent sans fermer la fenêtre ni sélectionner un autre plugin. Le choix reste enregistré après rechargement. Les autres réglages et la langue de Blockbench sont conservés. Le sélecteur est également disponible tout en haut des **Paramètres de Modeler Toolkit**, où le choix s’applique après validation. Le français reste la valeur par défaut.
+### Préparer et enregistrer un GIF
 
-| Bouton | Fonction |
-| --- | --- |
-| **Optimiser la texture et les UV** | Optimise les textures fixes et animées en conservant le mode UV de chaque cube. Dans les formats à texture active unique, optimise la disposition commune des variantes. Fusionne les faces identiques en UV par face, y compris après rotation ou miroir, et les dépliages complets identiques en boîte UV. Réserve 1 px transparent autour des régions ou des dépliages, sans prolonger leurs couleurs. Rend invisibles les faces entièrement transparentes. Le placement peut compacter le PNG tout en conservant la densité des pixels. |
-| **Optimiser les variantes de texture** | Dans les formats à plusieurs textures simultanées, optimise ensemble les images interchangeables qui partagent les UV de la variante de base. |
-| **Fusionner les textures en un atlas** | Regroupe les textures du modèle en une seule image ou en un flipbook commun. Réaffecte les faces, conserve leur orientation, maintient les boîtes UV et garde un espace transparent de 1 px entre les régions. |
-| **Créer une texture avec des UV indépendants** | Fait l’inverse du partage : recrée chaque texture compatible en carré, avec une zone distincte pour chaque face, même si ses pixels sont identiques à ceux d’une autre. Conserve les pixels, les rotations, les miroirs et la transparence, avec 1 px transparent entre les zones. La texture peut s’agrandir. |
-| **Restaurer les UV d’origine** | Apparaît uniquement si la sélection contient une sauvegarde compatible. Annule le nettoyage des bords sur les éléments concernés. Pour revenir sur une optimisation ou une fusion, utilisez la restauration des textures et UV décrite plus bas. |
-| **Créer des cubes inversés** | Crée des copies des cubes sélectionnés avec des faces orientées vers l’intérieur, nommées `<name>_inverted`. Utile pour rendre visibles des surfaces depuis l’intérieur. |
-| **Créer des contours** | Ajoute une enveloppe agrandie avec des faces inversées autour de la sélection pour produire un contour visible. L’épaisseur et la couleur ou la texture sont réglables. Les objets créés sont nommés `<name>_outline`. |
-| **Aperçu du rendu GIF** | Affiche une image fixe du rendu avec les réglages actuels : dimensions, cadrage, zoom, fond, éclairage, sol, ombre et filigrane. Si une animation est sélectionnée, l’image montre sa première pose. |
-| **Paramètres de Modeler Toolkit** | Cinq rubriques : Outils, Rendu, Éclairage, Sol et Filigrane. Affiche uniquement les réglages utiles aux options activées. Les réglages techniques de l’ombre sont rangés dans « Options avancées ». La réinitialisation concerne uniquement la rubrique affichée. |
-| **Afficher / masquer les calques** | Masque les éléments et groupes dont le nom contient `_layer`. Un second clic rétablit leur visibilité précédente. |
+Dans la fenêtre d’enregistrement GIF, choisissez les animations à jouer et réglez le cadrage, le fond, l’éclairage, le sol et le filigrane. **Aperçu du rendu GIF** montre une image fixe avec ces réglages. Si une animation est sélectionnée, il affiche sa première pose. Pour intégrer les images de référence visibles, cochez **Afficher les images de référence**.
 
-Le bouton de calques agit sur la hiérarchie du modèle, pas sur les calques de peinture des textures. Il reste accessible depuis la barre d’outils de la hiérarchie. Son raccourci peut être configuré dans les préférences de Blockbench.
+Le plugin mémorise vos réglages de capture après fermeture de Blockbench. **Reprendre les réglages du plugin** réapplique les valeurs par défaut du rendu, de l’éclairage et du sol.
 
-Le raccourci **Créer une texture (Blockbench)** a été retiré de Modeler Toolkit. L’outil natif de Blockbench reste disponible dans son interface habituelle.
+### Afficher un modèle de référence dans la vue 3D
 
-Lorsque plusieurs faces partagent les mêmes UV, peindre sur cette zone de texture modifie l’apparence de toutes ces faces.
-
-L’optimiseur corrige les petites erreurs d’arrondi des coordonnées afin de conserver la largeur et la hauteur des régions en pixels. Il recopie uniquement le contenu des régions UV. Les régions distinctes ne se chevauchent pas et sont séparées par au moins 1 px transparent, également présent aux bords de l’atlas. Les faces fusionnées partagent volontairement la même région. Quand l’atlas est déjà stable, une nouvelle optimisation ne crée pas de modification ni de sauvegarde supplémentaire.
-
-Les modèles peuvent mélanger **UV par face** et **boîtes UV**. L’optimisation conserve ces modes, les miroirs et la densité des pixels. En boîte UV, les faces restent liées à leur dépliage : le plugin déplace le dépliage entier et peut le partager avec un autre dépliage identique, sans le tourner ni séparer ses faces. Le padding de 1 px entoure ce dépliage complet ; les faces qui se touchent à l’intérieur restent jointives. Les pixels situés dans les parties inutilisées du dépliage ne sont pas recopiés.
-
-Lors de l’optimisation, une face dont tous les pixels utilisés ont un alpha à zéro devient invisible, aussi bien en UV par face qu’en boîte UV. Un seul pixel avec un alpha supérieur à zéro, même presque transparent, suffit à conserver la face. Les composantes RVB des pixels entièrement transparents ne comptent pas. Sur un cube, le plugin désactive la face avec l’état invisible natif de Blockbench. Sur un maillage, il retire la face vide ; ses données restent dans la sauvegarde pour permettre sa restauration. Pour les triangles et les quadrilatères, seuls les pixels touchés par les triangles UV sont vérifiés. Le bilan affiche le nombre de faces traitées. La création d’UV indépendants conserve les faces vides afin de pouvoir les peindre ensuite.
-
-**Optimiser la texture et les UV** conserve la résolution UV du projet et celle de chaque texture. En UV par face, le PNG peut changer de taille : les coordonnées sont recalculées pour que chaque face affiche les mêmes pixels. En boîte UV, l’optimiseur conserve les dimensions du PNG, car le dépliage impose la taille des faces. Si les régions ne tiennent pas avec la marge transparente, la texture concernée est laissée intacte. Chaque flipbook conserve le nombre d’images, leur ordre et leurs réglages de lecture. Les images rectangulaires d’un flipbook dont les dimensions sont explicites dans son fichier `.mcmeta` gardent leur taille.
-
-**Fusionner les textures en un atlas** peut mélanger des images fixes et des flipbooks. Les zones fixes sont répétées sur chaque image. La fusion conserve la résolution UV du projet. Dans un format à résolution UV par texture, l’atlas reprend la résolution de la première texture. Quand plusieurs cadences compatibles se combinent, l’atlas peut contenir davantage d’images pour reproduire chaque boucle à sa vitesse d’origine. Les boîtes UV conservent leur dépliage. Quand leurs densités diffèrent, le plugin peut répéter des pixels entiers pour atteindre une densité commune. Une région partagée doit correspondre au pixel près pendant tout le cycle, avec rotation ou miroir si nécessaire. Une face est masquée seulement si elle est entièrement transparente pendant toute la boucle.
-
-Si l’interpolation, les durées individuelles, les matériaux ou la taille empêchent une fusion à l’identique, le projet reste intact.
-
-Pour des textures interchangeables dans GeckoLib et les autres formats qui affichent une texture à la fois, **Optimiser la texture et les UV** applique le même placement aux variantes. Dans un format comme Free qui peut afficher plusieurs textures simultanément, utilisez **Optimiser les variantes de texture** lorsque toutes les faces pointent vers la variante de base. Les textures doivent partager la même résolution UV et les mêmes proportions par image. Les densités en pixels peuvent différer.
-
-Chaque variante conserve son nom, ses réglages de lecture et son image séparée. Deux zones sont mutualisées seulement si elles correspondent dans toutes les variantes et sur toutes leurs images. Une face transparente dans une variante reste présente si une autre l’affiche. **Restaurer les textures et UV d’origine** restaure les variantes ensemble.
-
-Pour peindre chaque face séparément, utilisez **Créer une texture avec des UV indépendants**. Le bouton agit sur tout le modèle, y compris les stades masqués. Chaque texture conserve ses faces attribuées : plusieurs textures ne sont pas fusionnées en une seule. Les pixels inutilisés ne sont pas recopiés. Les faces absentes restent absentes et les pixels transparents restent transparents. Les UV en boîte, les textures animées, les calques de peinture et les matériaux incompatibles sont conservés avec un message explicatif. Les atlas créés sont limités à 4096 × 4096 pixels.
-
-## Sauvegardes et restauration
-
-**Restaurer les textures et UV d’origine** apparaît lorsque le projet contient des données de récupération. Chaque restauration remonte d’une étape dans la chaîne des sauvegardes.
-
-L’optimisation, la fusion et la création d’UV indépendants acceptent **Annuler** et **Rétablir**. La restauration rétablit aussi les faces transparentes désactivées ou retirées par l’optimisation. Le bouton de restauration revient aussi à l’état précédant la création d’UV indépendants. Les sauvegardes sont conservées dans le fichier `.bbmodel` après enregistrement et réouverture. Vous pouvez réoptimiser ou séparer les textures actuelles sans perdre les sauvegardes précédentes. Les fichiers image existants ne sont pas écrasés automatiquement : enregistrez la nouvelle texture et le modèle pour conserver le résultat.
-
-Un changement de géométrie, de textures, de format ou de résolution UV peut rendre une ancienne sauvegarde incompatible. Le plugin refuse alors de l’appliquer et la conserve dans le projet. Une nouvelle optimisation reste possible et crée une nouvelle étape de récupération.
-
-## Enregistrement, éclairage, sol et ombres
-
-Choisissez une ou plusieurs animations à enregistrer directement dans la fenêtre GIF, même en dehors du mode Animer. Plusieurs animations sont jouées à la suite, dans l’ordre de la liste du projet. En durée **Animation**, l’enregistrement couvre la durée totale de la séquence ; en secondes ou en images, la séquence reprend au début si la durée choisie la dépasse. Le bouton de synchronisation de la rotation se cale aussi sur la durée totale. Les animations de durée nulle sont ignorées.
-
-La fenêtre GIF mémorise ses réglages sur cet appareil, y compris après fermeture et réouverture de Blockbench. Les cases cochées et les valeurs des options désactivées sont conservées. L’image de fond doit rester accessible au même emplacement. Chaque animation choisie est retrouvée par son identifiant, puis par son nom si cet identifiant a changé. Si aucune n’est retrouvée dans le modèle ouvert, une animation disponible est proposée.
-
-Quand vous validez une modification dans **Paramètres de Modeler Toolkit**, la valeur correspondante est appliquée à la fenêtre GIF. Vous pouvez encore la modifier dans cette fenêtre pour vos captures. Le bouton **Reprendre les réglages du plugin**, dans la fenêtre GIF, réapplique d’un coup vos réglages d’ombre, de rendu propre, d’éclairage et de sol. Le format, la durée, le cadrage, le fond, l’animation et l’activation du filigrane restent tels que vous les avez choisis. Ces préférences sont locales et ne modifient pas les modèles.
-
-L’option **Ombre dynamique / Rendu propre** applique un léger retrait des bords UV pendant le dessin pour limiter les bavures de pixels voisins. Ce nettoyage fonctionne avec ou sans filigrane, dans le cadre de capture, l’aperçu fixe et les exports. Il respecte les UV par face, les boîtes UV, les rotations, les miroirs et les images des textures animées. Seules les coordonnées d’affichage sont ajustées temporairement puis restaurées après chaque image, même en cas d’erreur : les UV du modèle, les textures et les sauvegardes restent intacts.
-
-L’ombre dynamique est calculée à partir du modèle animé et projetée sur un mur ou un sol invisible, ou sur le sol visible de rendu. Sa couleur, son opacité, sa netteté et la direction de la lumière sont réglables.
-
-**Couleur de l’ombre** et **Opacité de l’ombre (%)** se règlent directement dans la fenêtre GIF, sous **Ombre dynamique / Rendu propre**. Ces valeurs s’appliquent au cadre de capture, à l’aperçu et à l’export, et sont mémorisées avec la configuration de capture. Elles ne remplacent pas les valeurs par défaut enregistrées dans les paramètres du plugin.
-
-Activez **Éclairage personnalisé** dans la fenêtre GIF pour éclairer le modèle et le sol. Les valeurs par défaut se règlent aussi dans **Paramètres de Modeler Toolkit**.
-
-- **Direction de la lumière** : 0° correspond au côté de la caméra, -90° à la gauche, 90° à la droite et 180° à l’arrière.
-- **Hauteur de la lumière** : de 5° pour une lumière rasante à 90° pour une lumière au-dessus du modèle.
-- **Teinte de la lumière** : chaude, neutre, froide ou couleur personnalisée.
-- **Intensité de la lumière** : puissance de la source directionnelle.
-- **Lumière ambiante** : éclairage neutre des faces moins exposées.
-
-La lumière prend sa direction par rapport à la caméra au début de la capture, puis reste fixe pendant l’animation, y compris lorsque la caméra tourne. L’ombre suit cette même source ; les anciens réglages de direction de l’ombre sont alors masqués. Sans lumière directionnelle, l’ombre portée disparaît. L’éclairage est indépendant de l’activation du sol.
-
-Le cadre de capture, l’aperçu fixe et le GIF utilisent le même rendu. Les matériaux d’origine sont rétablis après chaque image : aucun pixel de texture, UV ou réglage d’éclairage de Blockbench n’est modifié. Les matériaux émissifs et les shaders bruts personnalisés conservent leur rendu propre. Il s’agit d’un éclairage directionnel avec ambiance, sans rebonds de lumière ni calcul physique comparable à Cycles.
-
-Activez **Sol de rendu** pour ajouter une surface temporaire unie ou en dalles. Réglez sa largeur, sa profondeur et la taille des dalles en blocs : **1 bloc = 16 unités du modèle**. Les couleurs, l’épaisseur, la hauteur et les décalages X/Z sont également configurables.
-
-Le sol se place sous le point le plus bas du modèle à la première image enregistrée, puis reste fixe pendant l’animation. L’ombre s’arrête à ses bords. Prévoyez une surface assez grande pour les mouvements et l’ombre. Le sol est retiré à la fin de la capture, lors d’une annulation ou du déchargement du plugin. Il n’est jamais ajouté à la géométrie ni aux textures du modèle.
-
-Le cadre de capture affiche le rendu composé avant le départ, puis les images réellement enregistrées : fond, modèle éclairé, sol, ombre et filigrane. Le cadrage et la caméra restent ajustables avant l’enregistrement.
-
-**Afficher les images de référence** inclut les références visibles de Blockbench, y compris les images placées sur un plan 3D, dans le cadre de capture, l’aperçu et l’export. Cette case est décochée par défaut et son état est mémorisé avec la configuration de capture.
-
-**Aperçu du rendu GIF** capture une seule image PNG avec les réglages visuels choisis. Il montre la première pose de la première animation sélectionnée lorsqu’elle est activée et conserve les proportions de la capture. La caméra et l’état de l’animation sont ensuite restaurés.
-
-Le **filigrane** comporte une ligne de texte avec couleur, police, taille, position et marge réglables. Son activation se choisit séparément pour chaque capture. Les polices installées sur l’ordinateur sont proposées lorsque le système permet de les lire.
-
-## Valeurs par défaut et confidentialité
-
-À la première installation, le rendu dynamique, l’éclairage personnalisé et le sol sont désactivés. Le filigrane est vide et désactivé. L’éclairage personnalisé propose une lumière blanche à 70 % d’intensité avec 30 % de lumière ambiante, venant de la gauche à 45° de hauteur. Lorsque le rendu dynamique est activé, l’ombre utilise initialement un gris neutre à 35 % d’opacité. Avec l’éclairage personnalisé, cette opacité est pondérée par la part de lumière directionnelle. Les valeurs peuvent être réinitialisées dans les paramètres de Modeler Toolkit.
-
-Pour migrer depuis Raven Toolkit ou RavenTool, désinstallez l’ancien plugin avant de charger Modeler Toolkit. Les paramètres existants sont importés automatiquement et les anciennes données de restauration restent prises en charge. L’identifiant du plugin est `modeler_toolkit`.
-
-L’inversion des cubes et les contours utilisent des implémentations développées pour ce plugin. Aucun code source d’autres plugins n’est embarqué.
-
-Le plugin n’envoie aucun modèle, texture ou enregistrement et ne comporte ni télémétrie ni service de clé d’accès. L’ouverture des paramètres peut rechercher les polices locales. Un navigateur peut demander une autorisation ; sur Windows, la version de bureau peut lire la liste système. Les noms des polices sont conservés localement. Aucune police n’est fournie avec le plugin.
-
-## Compatibilité et limites
-
-- L’optimiseur traite les UV par face, les boîtes UV et les UV de maillages compatibles. Les textures à calques, les matériaux et les éléments incompatibles conservent leur disposition d’origine.
-- L’optimisation conserve le nombre d’images et la lecture de chaque flipbook. Lors d’une fusion, les formats à résolution UV par texture peuvent utiliser un atlas rectangulaire si la limite graphique l’exige, sous réserve de conserver le cycle de lecture. Les flipbooks dont les images sont mal délimitées ou dont l’atlas ne tient pas dans les limites restent intacts.
-- Une boîte UV dont les faces utilisent plusieurs textures conserve sa disposition d’origine. Si une grille partagée ne peut pas évoluer de façon compatible, l’optimisation utilise les dimensions d’origine. Si le placement avec padding ne tient pas, elle conserve la texture concernée ou l’ensemble des variantes liées.
-- Les doublons sont comparés sur les pixels contenus dans leurs régions UV, y compris après rotation ou miroir. Les pixels extérieurs aux régions ne bloquent pas leur fusion et ne sont plus recopiés dans l’atlas. L’alpha est comparé exactement ; les composantes RVB invisibles des pixels entièrement transparents sont ignorées. Le padding est toujours de 1 px transparent, quelle que soit la résolution UV du projet. Les pixels ne sont ni redimensionnés ni lissés.
-- De légères différences d’échantillonnage peuvent apparaître aux limites des pixels après une réorganisation des UV. Utilisez l’annulation ou la restauration si nécessaire. Les fichiers d’images d’origine ne sont pas automatiquement écrasés.
-- Les données de récupération sont conservées dans les projets `.bbmodel`, pas dans les formats d’export destinés aux jeux.
-- Le GIF ne représente pas les transparences partielles progressives. Pour des ombres douces, utilisez un fond opaque ou un format à transparence complète comme l’APNG.
-- La découverte des polices dépend du système et du navigateur. Une police manquante peut modifier l’apparence du texte ; Arial reste disponible comme solution de repli.
-- Les fenêtres et les noms de formats fournis directement par Blockbench conservent la langue et les libellés de l’application.
+Dans **Fichier > Plugins > Modeler Toolkit > Settings**, ouvrez **Modèles d’aperçu personnalisés** et importez un fichier `.bbmodel` avec ses textures. Faites ensuite un clic droit sur une zone vide de la vue 3D et sélectionnez votre référence dans **Modèles d’aperçu**. Vous pouvez l’utiliser pour comparer les proportions avec celles de votre modèle. La bibliothèque reste disponible après redémarrage.
 
 ## Licence
 
-Modeler Toolkit est distribué sous [licence MIT](LICENSE). Aucune dépendance d’exécution n’est embarquée : le plugin utilise les interfaces et les bibliothèques fournies par Blockbench.
+Vous pouvez utiliser, modifier et redistribuer Modeler Toolkit sous [licence MIT](LICENSE). Toute copie ou partie substantielle du plugin doit conserver la mention de copyright et le texte de la licence.
