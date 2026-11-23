@@ -39,7 +39,7 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 
 ### Optimiser, fusionner ou séparer les textures
 
-- **Optimiser la texture et les UV** réorganise les zones utilisées et partage les motifs identiques. Le plugin conserve la résolution UV et laisse au moins 1 pixel transparent entre les zones distinctes.
+- **Optimiser la texture et les UV** réorganise les zones utilisées et partage les motifs identiques. Si l’image change de taille, la grille UV s’ajuste pour garder le même nombre de pixels par bloc. Les zones distinctes restent séparées par au moins 1 pixel transparent.
 - **Optimiser les variantes de texture** applique la même disposition à plusieurs versions interchangeables d’une texture. Chaque version conserve sa propre image.
 - **Fusionner les textures en un atlas** rassemble plusieurs textures dans une seule image. Si elles sont animées, la fusion est possible lorsque le plugin peut reproduire leurs boucles d’origine.
 - **Créer une texture avec des UV indépendants** donne à chaque face une zone à peindre. Cette option est utile si une retouche doit s’appliquer à une seule face.
