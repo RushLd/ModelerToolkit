@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.9.6**.
+Version actuelle : **3.10.0**.
 
 ## Installation
 
@@ -16,6 +16,14 @@ Version actuelle : **3.9.6**.
 3. Retrouvez les outils dans le menu **Modeler Toolkit**. Les options de capture apparaissent également dans la fenêtre d’enregistrement GIF.
 
 Vous pouvez aussi télécharger [modeler_toolkit.js](https://github.com/RushLd/ModelerToolkit/blob/main/modeler_toolkit.js), puis utiliser **Charger un plugin depuis un fichier**. Installez une seule copie. Ce dépôt est distribué indépendamment du catalogue officiel de Blockbench.
+
+## Modèles d’aperçu personnalisés
+
+Dans **Fichier > Plugins > Modeler Toolkit > Settings**, ouvrez **Modèles d’aperçu personnalisés**. Importez un `.bbmodel`. Blockbench Desktop peut retrouver les textures liées sur le disque. Vous pouvez aussi sélectionner leurs images en même temps que le modèle, notamment dans la version web de Blockbench.
+
+Dans la vue 3D, faites un clic droit sur une zone vide, puis ouvrez **Modèles d’aperçu**. Votre modèle apparaît à côté des références natives. Vous pouvez l’afficher, le masquer, le déplacer, le tourner et ajuster son échelle avec les commandes de Blockbench.
+
+La bibliothèque garde la géométrie visible en pose fixe et ses textures sur cet appareil. Elle reste disponible après redémarrage, y compris si vous déplacez les fichiers source. Utilisez les paramètres du plugin pour renommer ou retirer une référence. Les aperçus restent séparés de l’Outliner et du modèle de travail.
 
 ## À quoi sert chaque bouton ?
 

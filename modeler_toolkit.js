@@ -205,6 +205,21 @@
         "add_your_configured_text_to_every_frame_independently_of_dynamic": "Ajouter le texte configuré à chaque image, indépendamment de l’option « Ombre dynamique / Rendu propre ».",
         "watermark_settings": "Paramètres du filigrane",
         "show_reference_images": "Afficher les images de référence",
+        "reference_library": "Modèles d’aperçu personnalisés",
+        "reference_library_description": "Importer et gérer les modèles disponibles dans le menu Modèles d’aperçu de la vue 3D.",
+        "reference_import": "Importer un .bbmodel",
+        "reference_import_files": "Modèle Blockbench et textures",
+        "reference_import_hint": "Sélectionne un .bbmodel et, si nécessaire, ses images de texture. Les références s’affichent dans le menu du clic droit de la vue 3D.",
+        "reference_empty": "Aucun modèle d’aperçu importé.",
+        "reference_invalid_model": "Sélectionne un seul fichier .bbmodel valide.",
+        "reference_unsupported_format": "Le format de ce modèle est indisponible dans Blockbench.",
+        "reference_missing_texture": "Texture introuvable ou illisible : ",
+        "reference_no_geometry": "Ce modèle ne contient pas de géométrie visible.",
+        "reference_busy": "Chargement de la bibliothèque…",
+        "reference_error": "La bibliothèque de modèles d’aperçu est indisponible.",
+        "reference_rename": "Renommer",
+        "reference_remove": "Retirer",
+        "reference_name": "Nom du modèle d’aperçu",
         "capture_visible_reference_images": "Inclure les images de référence visibles dans le cadre de capture, l’aperçu et l’export.",
         "capture_configuration_storage_failed": "Les réglages GIF sont conservés pour cette session, mais leur sauvegarde locale a échoué. Ils risquent d’être perdus à la fermeture de Blockbench.",
         "settings_tools": "Outils",
@@ -427,6 +442,21 @@
         "add_your_configured_text_to_every_frame_independently_of_dynamic": "Add the configured text to every frame, independently of Dynamic shadow / Clean rendering.",
         "watermark_settings": "Watermark settings",
         "show_reference_images": "Show reference images",
+        "reference_library": "Custom preview models",
+        "reference_library_description": "Import and manage models available in the 3D viewport’s Preview Models menu.",
+        "reference_import": "Import a .bbmodel",
+        "reference_import_files": "Blockbench model and textures",
+        "reference_import_hint": "Select a .bbmodel and its texture images if needed. References are available in the 3D viewport’s right-click menu.",
+        "reference_empty": "No preview models imported.",
+        "reference_invalid_model": "Select one valid .bbmodel file.",
+        "reference_unsupported_format": "This model’s format is unavailable in Blockbench.",
+        "reference_missing_texture": "Missing or unreadable texture: ",
+        "reference_no_geometry": "This model has no visible geometry.",
+        "reference_busy": "Loading the library…",
+        "reference_error": "The preview model library is unavailable.",
+        "reference_rename": "Rename",
+        "reference_remove": "Remove",
+        "reference_name": "Preview model name",
         "capture_visible_reference_images": "Include visible reference images in the recording frame, preview and export.",
         "capture_configuration_storage_failed": "GIF settings are kept for this session, but saving them locally failed. They may be lost when Blockbench closes.",
         "settings_tools": "Tools",
@@ -626,6 +656,10 @@
             setting.description = definition.description || '';
             if (definition.options) setting.options = definition.options;
         });
+        if (reference_setting) {
+            reference_setting.name = translate('reference_library');
+            reference_setting.description = translate('reference_library_description');
+        }
         tool_definitions().forEach(([id, definition]) => {
             const action = tool_actions.find(action => action.id === id);
             if (!action) return;
@@ -3877,6 +3911,386 @@
         return render_recording_preview(Screencam.gif_options_dialog.getFormResult(), {...options, clean_uv: options.clean_uv ?? !!options.enabled, watermark_enabled: options.watermark_enabled ?? true});
     }
 
+
+    const reference_entries = new Map();
+    const reference_image_types = {png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp'};
+    let reference_database;
+    let reference_loading;
+    let reference_setting;
+    let reference_dialog;
+    let reference_busy = false;
+    let refresh_reference_dialog;
+
+    function open_reference_database() {
+        reference_database ??= new Promise((resolve, reject) => {
+            const request = indexedDB.open(plugin_id + '_preview_library', 1);
+            request.onupgradeneeded = () => request.result.createObjectStore('models', {keyPath: 'id'});
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        return reference_database;
+    }
+
+    async function reference_transaction(mode, operate) {
+        const database = await open_reference_database();
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction('models', mode);
+            const request = operate(transaction.objectStore('models'));
+            transaction.oncomplete = () => resolve(request.result);
+            transaction.onabort = () => reject(transaction.error || request.error);
+        });
+    }
+
+    function reference_image_type(name) {
+        const extension = String(name).split('.').at(-1).toLowerCase();
+        return Object.hasOwn(reference_image_types, extension) ? reference_image_types[extension] : undefined;
+    }
+
+    function reference_data_url(content, type) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(new Blob([content], {type}));
+        });
+    }
+
+    async function reference_texture_source(texture, file, images) {
+        const provided = [texture.name, texture.relative_path, texture.path]
+            .filter(Boolean).map(value => String(value).split(/[\\/]/).at(-1).toLowerCase())
+            .map(name => images.get(name)).find(Boolean);
+        if (provided) return reference_data_url(provided.content, reference_image_type(provided.name));
+        if (isApp && file.path && PathModule.isAbsolute(file.path)) {
+            const filesystem = require('fs');
+            const directory = PathModule.dirname(file.path);
+            const candidates = [
+                texture.relative_path && PathModule.resolve(directory, texture.relative_path),
+                texture.path && PathModule.isAbsolute(texture.path) && texture.path,
+                texture.name && PathModule.join(directory, PathModule.basename(texture.name))
+            ];
+            for (const candidate of candidates) {
+                const type = candidate && reference_image_type(candidate);
+                if (!type || !filesystem.existsSync(candidate) || !filesystem.statSync(candidate).isFile()) continue;
+                return reference_data_url(filesystem.readFileSync(candidate), type);
+            }
+        }
+        return /^data:image\/(?:png|jpeg|webp|gif|bmp);base64,/i.test(texture.source ?? '') ? texture.source : null;
+    }
+
+    function reference_snapshot(project) {
+        project.model_3d.updateWorldMatrix(true, true);
+        const offset = Format.centered_grid ? 0 : -8;
+        const anchor = new THREE.Matrix4().makeTranslation(offset, 0, offset)
+            .multiply(new THREE.Matrix4().copy(project.model_3d.matrixWorld).invert());
+        const textures = [];
+        const materials = [];
+        const meshes = [];
+        const texture_indices = new Map();
+        const material_indices = new Map();
+        function texture_index(map) {
+            if (!map?.image) return null;
+            if (!texture_indices.has(map)) {
+                const canvas = document.createElement('canvas');
+                canvas.width = map.image.width;
+                canvas.height = map.image.height;
+                canvas.getContext('2d').drawImage(map.image, 0, 0);
+                texture_indices.set(map, textures.length);
+                textures.push({source: canvas.toDataURL('image/png'), flip_y: map.flipY, wrap_s: map.wrapS, wrap_t: map.wrapT, color_space: map.colorSpace});
+            }
+            return texture_indices.get(map);
+        }
+        function material_index(material) {
+            if (!material_indices.has(material)) {
+                const texture = texture_index(material.map || material.uniforms?.map?.value);
+                material_indices.set(material, materials.length);
+                materials.push({
+                    texture,
+                    color: material.color?.getHex() ?? 0xffffff,
+                    side: material.side,
+                    opacity: material.opacity,
+                    transparent: material.transparent,
+                    alpha_test: material.alphaTest || (texture === null ? 0 : 0.01),
+                    shading: !material.isMeshBasicMaterial && material.uniforms?.SHADE?.value !== false,
+                    depth_write: material.depthWrite,
+                    vertex_colors: material.vertexColors
+                });
+            }
+            return material_indices.get(material);
+        }
+        for (const element of Outliner.elements) {
+            const mesh = element.mesh;
+            if (!mesh?.isMesh || !mesh.geometry?.attributes.position) continue;
+            let visible = true;
+            let parent = mesh;
+            while (parent && parent !== project.model_3d) {
+                visible &&= parent.visible;
+                parent = parent.parent;
+            }
+            if (!visible || parent !== project.model_3d) continue;
+            const geometry = new THREE.BufferGeometry().copy(mesh.geometry);
+            if (mesh.isSkinnedMesh || mesh.morphTargetInfluences?.some(Boolean)) {
+                const vertex = new THREE.Vector3();
+                const position = geometry.attributes.position;
+                for (let i = 0; i < position.count; i++) {
+                    mesh.getVertexPosition(i, vertex);
+                    position.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                }
+                geometry.deleteAttribute('skinIndex');
+                geometry.deleteAttribute('skinWeight');
+                geometry.morphAttributes = {};
+                geometry.computeVertexNormals();
+            }
+            meshes.push({
+                geometry: geometry.toJSON(),
+                materials: Array.isArray(mesh.material) ? mesh.material.map(material_index) : material_index(mesh.material),
+                matrix: new THREE.Matrix4().multiplyMatrices(anchor, mesh.matrixWorld).toArray(),
+                render_order: mesh.renderOrder
+            });
+            geometry.dispose();
+        }
+        return {textures, materials, meshes};
+    }
+
+    async function read_reference_model(files, generation) {
+        const model_files = files.filter(file => /\.bbmodel$/i.test(file.name));
+        if (model_files.length !== 1) throw new Error(translate('reference_invalid_model'));
+        const [file] = model_files;
+        let data;
+        try {
+            data = JSON.parse(file.content);
+        } catch {
+            throw new Error(translate('reference_invalid_model'));
+        }
+        if (!data?.meta || !Array.isArray(data.elements) || (data.textures && !Array.isArray(data.textures))) throw new Error(translate('reference_invalid_model'));
+        const format_id = data.meta.model_format || 'free';
+        if (!Object.hasOwn(Formats, format_id)) throw new Error(translate('reference_unsupported_format'));
+        const images = new Map(files.filter(file => reference_image_type(file.name)).map(file => [file.name.toLowerCase(), file]));
+        const textures = [];
+        for (const texture of data.textures ?? []) {
+            const source = await reference_texture_source(texture, file, images);
+            if (!source) throw new Error(translate('reference_missing_texture') + texture.name);
+            textures.push({...texture, source, path: '', relative_path: '', sync_to_project: '', layers: [], layers_enabled: false});
+        }
+        if (generation !== lifecycle) return null;
+        if (active_session || pending_preview) throw new Error(translate('finish_or_cancel_the_current_gif_recording_first'));
+        const previous = Project;
+        let temporary;
+        try {
+            setupProject(Formats[format_id]);
+            temporary = Project;
+            Codecs.project.parse({
+                meta: data.meta, name: data.name, resolution: data.resolution,
+                textures, texture_groups: data.texture_groups,
+                elements: data.elements, groups: data.groups, outliner: data.outliner
+            });
+            await Promise.all(Texture.all.map(texture => new Promise((resolve, reject) => {
+                const finish = event => {
+                    clearTimeout(timeout);
+                    texture.img.removeEventListener('load', finish);
+                    texture.img.removeEventListener('error', finish);
+                    if (event?.type === 'load') resolve();
+                    else reject(new Error(translate('reference_missing_texture') + texture.name));
+                };
+                const timeout = setTimeout(finish, 10000);
+                texture.img.addEventListener('load', finish);
+                texture.img.addEventListener('error', finish);
+            })));
+            if (generation !== lifecycle || !ModelProject.all.includes(temporary)) return null;
+            if (Project !== temporary && !temporary.select()) return null;
+            Canvas.updateAll();
+            const snapshot = reference_snapshot(temporary);
+            if (!snapshot.meshes.length) throw new Error(translate('reference_no_geometry'));
+            return {id: plugin_id + '_reference_' + guid(), name: file.name.replace(/\.bbmodel$/i, '').slice(0, 120), ...snapshot};
+        } finally {
+            if (temporary && ModelProject.all.includes(temporary)) {
+                const restore = Project === temporary ? previous : Project;
+                await temporary.close(true);
+                if (restore && ModelProject.all.includes(restore) && Project !== restore) restore.select();
+            }
+        }
+    }
+
+    function register_reference_model(record) {
+        const preview = new PreviewModel(record.id, {name: record.name});
+        preview.name = record.name;
+        const resources = [];
+        const enable = preview.enable.bind(preview);
+        preview.enable = () => {
+            if (!resources.length) {
+                const textures = record.textures.map(data => {
+                    const texture = new THREE.TextureLoader().load(data.source);
+                    texture.flipY = data.flip_y;
+                    texture.wrapS = data.wrap_s;
+                    texture.wrapT = data.wrap_t;
+                    if (typeof data.color_space === 'string') texture.colorSpace = data.color_space;
+                    texture.magFilter = THREE.NearestFilter;
+                    texture.minFilter = THREE.NearestFilter;
+                    resources.push(texture);
+                    return texture;
+                });
+                const materials = record.materials.map(data => {
+                    const Material = data.shading ? THREE.MeshLambertMaterial : THREE.MeshBasicMaterial;
+                    const material = new Material({
+                        color: data.color, map: textures[data.texture] ?? null, side: data.side, opacity: data.opacity,
+                        transparent: data.transparent, alphaTest: data.alpha_test, depthWrite: data.depth_write, vertexColors: data.vertex_colors
+                    });
+                    resources.push(material);
+                    return material;
+                });
+                const loader = new THREE.BufferGeometryLoader();
+                for (const data of record.meshes) {
+                    const geometry = loader.parse(data.geometry);
+                    const material = Array.isArray(data.materials) ? data.materials.map(index => materials[index]) : materials[data.materials];
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.matrixAutoUpdate = false;
+                    mesh.matrix.fromArray(data.matrix);
+                    mesh.renderOrder = data.render_order;
+                    preview.model_3d.add(mesh);
+                    resources.push(geometry);
+                }
+            }
+            enable();
+        };
+        reference_entries.set(record.id, {record, preview, resources});
+    }
+
+    function remove_reference_model(id) {
+        const entry = reference_entries.get(id);
+        if (!entry) return;
+        entry.preview.disable();
+        if (PreviewModel.transform_model === entry.preview) {
+            PreviewModel.transform_model = null;
+            if (Project) Transformer.updateSelection();
+        }
+        entry.preview.model_3d.clear();
+        for (const resource of entry.resources) resource.dispose();
+        entry.preview.material?.dispose();
+        entry.preview.delete();
+        reference_entries.delete(id);
+    }
+
+    function start_reference_library() {
+        const generation = lifecycle;
+        reference_loading = reference_transaction('readonly', store => store.getAll()).then(records => {
+            if (generation !== lifecycle) return false;
+            for (const record of records) register_reference_model(record);
+            return true;
+        }).catch(error => {
+            console.error(error);
+            return false;
+        });
+    }
+
+    function open_reference_library() {
+        reference_dialog?.hide().delete();
+        const dialog = new Dialog({
+            id: plugin_id + '_preview_library',
+            title: translate('reference_library'),
+            width: 560,
+            lines: ['<div class="modeler_toolkit_reference_library"></div>'],
+            singleButton: true,
+            buttons: [translate('close')]
+        }).show();
+        reference_dialog = dialog;
+        const container = dialog.object.querySelector('.modeler_toolkit_reference_library');
+        const generation = lifecycle;
+        const button = (label, click) => {
+            const element = document.createElement('button');
+            element.type = 'button';
+            element.textContent = translate(label);
+            element.addEventListener('click', click);
+            return element;
+        };
+        async function run(action) {
+            if (reference_busy || generation !== lifecycle) return;
+            reference_busy = true;
+            render(translate('reference_busy'));
+            let message = '';
+            try {
+                await action();
+            } catch (error) {
+                console.error(error);
+                message = error instanceof Error ? error.message : translate('reference_error');
+            } finally {
+                if (generation === lifecycle) {
+                    reference_busy = false;
+                    refresh_reference_dialog?.(message);
+                }
+            }
+        }
+        function render(message = '') {
+            if (generation !== lifecycle || reference_dialog !== dialog) return;
+            const help = document.createElement('p');
+            help.textContent = translate('reference_import_hint');
+            const import_button = button('reference_import', () => {
+                if (reference_busy) return;
+                Blockbench.import({
+                    type: translate('reference_import_files'),
+                    extensions: ['bbmodel', ...Object.keys(reference_image_types)],
+                    multiple: true,
+                    readtype: name => /\.bbmodel$/i.test(name) ? 'text' : 'buffer'
+                }, files => run(async () => {
+                    const record = await read_reference_model(files, generation);
+                    if (!record || generation !== lifecycle) return;
+                    await reference_transaction('readwrite', store => store.add(record));
+                    if (generation === lifecycle) register_reference_model(record);
+                }));
+            });
+            container.replaceChildren(help, import_button);
+            const status = document.createElement('p');
+            status.setAttribute('role', 'status');
+            status.textContent = message || (reference_entries.size ? '' : translate('reference_empty'));
+            container.append(status);
+            for (const {record, preview} of reference_entries.values()) {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;margin:8px 0';
+                const name = document.createElement('input');
+                name.type = 'text';
+                name.maxLength = 120;
+                name.value = record.name;
+                name.setAttribute('aria-label', translate('reference_name'));
+                name.style.flex = '1';
+                row.append(name, button('reference_rename', () => run(async () => {
+                    const value = name.value.trim();
+                    if (!value || value === record.name) return;
+                    const updated = {...record, name: value};
+                    await reference_transaction('readwrite', store => store.put(updated));
+                    if (generation !== lifecycle) return;
+                    record.name = value;
+                    preview.name = value;
+                })), button('reference_remove', () => run(async () => {
+                    await reference_transaction('readwrite', store => store.delete(record.id));
+                    if (generation !== lifecycle) return;
+                    remove_reference_model(record.id);
+                    delete StateMemory.preview_model_customization[record.id];
+                    StateMemory.save('preview_model_customization');
+                })));
+                container.append(row);
+            }
+            container.querySelectorAll('button').forEach(element => element.disabled = reference_busy);
+        }
+        refresh_reference_dialog = render;
+        render(translate('reference_busy'));
+        container.querySelector('button').disabled = true;
+        reference_loading.then(loaded => {
+            render(loaded ? '' : translate('reference_error'));
+            if (!loaded) container.querySelectorAll('button').forEach(element => element.disabled = true);
+        });
+    }
+
+    function stop_reference_library() {
+        reference_dialog?.hide().delete();
+        reference_dialog = null;
+        refresh_reference_dialog = null;
+        reference_setting?.delete();
+        reference_setting = null;
+        for (const id of reference_entries.keys()) remove_reference_model(id);
+        reference_database?.then(database => database.close(), () => {});
+        reference_database = null;
+        reference_loading = null;
+        reference_busy = false;
+    }
+
     BBPlugin.register(plugin_id, {
         title: translate('modeler_toolkit'),
         author: 'Raven Studio',
@@ -3884,7 +4298,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.9.6',
+        version: '3.10.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
@@ -3913,6 +4327,16 @@
                     }
                 });
             });
+            if (typeof PreviewModel === 'function' && typeof indexedDB !== 'undefined') {
+                reference_setting = new Setting(plugin_id + '_preview_library', {
+                    name: translate('reference_library'),
+                    description: translate('reference_library_description'),
+                    type: 'click',
+                    plugin: plugin_id,
+                    click: open_reference_library
+                });
+                start_reference_library();
+            }
             const form = Screencam.gif_options_dialog.form_config;
             previous_reference_images_field = form[reference_images_field];
             installed_reference_images_field = {
@@ -4070,6 +4494,7 @@
             if (Dialog.open === Screencam.gif_options_dialog) save_capture_configuration();
             plugin_loaded = false;
             lifecycle++;
+            stop_reference_library();
             restore_language_property?.();
             restore_language_property = null;
             font_process?.kill();
