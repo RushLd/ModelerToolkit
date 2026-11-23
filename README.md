@@ -2,7 +2,7 @@
 
 Des outils de textures, d’UV, de modélisation et de capture pour **Blockbench 5.2 ou plus récent**. Les paramètres et les messages propres au plugin sont disponibles en français et en anglais, indépendamment de la langue de Blockbench.
 
-Version actuelle : **3.8.0**.
+Version actuelle : **3.9.6**.
 
 ## Installation
 
@@ -46,7 +46,7 @@ Les modèles peuvent mélanger **UV par face** et **boîtes UV**. L’optimisati
 
 Lors de l’optimisation, une face dont tous les pixels utilisés ont un alpha à zéro devient invisible, aussi bien en UV par face qu’en boîte UV. Un seul pixel avec un alpha supérieur à zéro, même presque transparent, suffit à conserver la face. Les composantes RVB des pixels entièrement transparents ne comptent pas. Sur un cube, le plugin désactive la face avec l’état invisible natif de Blockbench. Sur un maillage, il retire la face vide ; ses données restent dans la sauvegarde pour permettre sa restauration. Pour les triangles et les quadrilatères, seuls les pixels touchés par les triangles UV sont vérifiés. Le bilan affiche le nombre de faces traitées. La création d’UV indépendants conserve les faces vides afin de pouvoir les peindre ensuite.
 
-**Optimiser la texture et les UV** conserve les textures séparées, y compris quand leurs dimensions et leurs densités diffèrent. Chaque flipbook conserve le nombre d’images, leur ordre et leurs réglages de lecture. La grille UV suit proportionnellement la taille du PNG pour conserver la densité de pixels. Par exemple, passer d’une image 128×128 et d’une grille 64×64 à une image 96×96 et une grille 48×48 conserve la densité x32. Plusieurs textures qui partagent la grille du projet sont compactées ensemble lorsqu’elles peuvent conserver leur densité sur une même grille. L’optimiseur conserve également la taille des images rectangulaires d’un flipbook quand les dimensions sont explicites dans son fichier `.mcmeta`.
+**Optimiser la texture et les UV** conserve la résolution UV du projet et celle de chaque texture. En UV par face, le PNG peut changer de taille : les coordonnées sont recalculées pour que chaque face affiche les mêmes pixels. En boîte UV, l’optimiseur conserve les dimensions du PNG, car le dépliage impose la taille des faces. Si les régions ne tiennent pas avec la marge transparente, la texture concernée est laissée intacte. Chaque flipbook conserve le nombre d’images, leur ordre et leurs réglages de lecture. Les images rectangulaires d’un flipbook dont les dimensions sont explicites dans son fichier `.mcmeta` gardent leur taille.
 
 **Fusionner les textures en un atlas** peut mélanger des images fixes et des flipbooks. Les zones fixes sont répétées sur chaque image. La fusion conserve la résolution UV du projet. Dans un format à résolution UV par texture, l’atlas reprend la résolution de la première texture. Quand plusieurs cadences compatibles se combinent, l’atlas peut contenir davantage d’images pour reproduire chaque boucle à sa vitesse d’origine. Les boîtes UV conservent leur dépliage. Quand leurs densités diffèrent, le plugin peut répéter des pixels entiers pour atteindre une densité commune. Une région partagée doit correspondre au pixel près pendant tout le cycle, avec rotation ou miroir si nécessaire. Une face est masquée seulement si elle est entièrement transparente pendant toute la boucle.
 
