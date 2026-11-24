@@ -31,7 +31,7 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 - **Aperçu du rendu GIF** - Affiche une image fixe avec le cadrage et les réglages de la capture.
 - **Ombre dynamique / Rendu propre** - Projette une ombre réglable et limite les bavures de pixels sur les bords des faces.
 - **Éclairage personnalisé** - Règle la direction, la hauteur, la teinte et l’intensité de la lumière, ainsi que l’éclairage ambiant.
-- **Sol de rendu** - Ajoute un sol temporaire uni ou en dalles pour recevoir l’ombre.
+- **Sol de rendu** - Ajoute un sol temporaire uni ou en dalles qui reçoit l’ombre. Il se place à Y = 0 par défaut et peut s’aligner sur le bas du modèle.
 - **Afficher les images de référence** - Inclut les images de référence visibles dans l’aperçu et le GIF.
 - **Filigrane** - Ajoute une ligne de texte avec une police, une couleur, une taille et une position au choix.
 - **Paramètres de Modeler Toolkit** - Choisissez le français ou l’anglais et définissez vos réglages de rendu par défaut. La fenêtre GIF mémorise vos choix et permet de reprendre les valeurs du plugin.
@@ -50,6 +50,8 @@ Après un changement, **Restaurer les textures et UV d’origine** remonte d’u
 ### Préparer et enregistrer un GIF
 
 Dans la fenêtre d’enregistrement GIF, choisissez les animations à jouer et réglez le cadrage, le fond, l’éclairage, le sol et le filigrane. **Aperçu du rendu GIF** montre une image fixe avec ces réglages. Si une animation est sélectionnée, il affiche sa première pose. Pour intégrer les images de référence visibles, cochez **Afficher les images de référence**.
+
+Activez **Sol de rendu**, puis cochez **Aligner le sol sur le bas du modèle** si vous souhaitez placer le sol au niveau du point le plus bas de la première pose. Par défaut, il se place à Y = 0. Le décalage vertical s’applique à partir de la hauteur choisie, qui reste fixe pendant la capture.
 
 Le plugin mémorise vos réglages de capture après fermeture de Blockbench. **Reprendre les réglages du plugin** réapplique les valeurs par défaut du rendu, de l’éclairage et du sol.
 

@@ -20,6 +20,7 @@
         "ambient_description": "Éclairage neutre des faces moins exposées. À 0 %, seule la lumière directionnelle éclaire le modèle.",
         "capture_floor": "Sol de rendu",
         "capture_floor_description": "Ajouter un sol temporaire qui reçoit l’ombre configurée. Un bloc correspond à 16 unités du modèle.",
+        "floor_align_model": "Aligner le sol sur le bas du modèle",
         "floor_style": "Aspect du sol",
         "floor_tiles": "Dalles",
         "floor_solid": "Uni",
@@ -30,7 +31,7 @@
         "floor_seam_color": "Couleur des joints",
         "floor_thickness": "Épaisseur du sol (unités)",
         "floor_height": "Décalage vertical du sol (unités)",
-        "floor_height_description": "Par rapport au bas du modèle à la première image. Le sol reste fixe pendant tout l’enregistrement.",
+        "floor_height_description": "Décalage par rapport à Y = 0 ou au bas du modèle à la première image si l’alignement est activé.",
         "floor_offset_x": "Décalage X du sol (unités)",
         "floor_offset_z": "Décalage Z du sol (unités)",
         "back_to_recording": "Retour à l’enregistrement",
@@ -263,6 +264,7 @@
         "ambient_description": "Neutral lighting for less exposed faces. At 0%, only the directional light illuminates the model.",
         "capture_floor": "Render floor",
         "capture_floor_description": "Add a temporary floor that receives the configured shadow. One block equals 16 model units.",
+        "floor_align_model": "Align floor to the bottom of the model",
         "floor_style": "Floor appearance",
         "floor_tiles": "Tiles",
         "floor_solid": "Solid",
@@ -273,7 +275,7 @@
         "floor_seam_color": "Seam color",
         "floor_thickness": "Floor thickness (units)",
         "floor_height": "Floor vertical offset (units)",
-        "floor_height_description": "Relative to the bottom of the model in the first frame. The floor stays fixed throughout the recording.",
+        "floor_height_description": "Offset from Y = 0 or from the bottom of the model in the first frame when alignment is enabled.",
         "floor_offset_x": "Floor X offset (units)",
         "floor_offset_z": "Floor Z offset (units)",
         "back_to_recording": "Back to recording",
@@ -524,6 +526,7 @@
             light_y: {name: translate('light_vertical_direction'), type: 'number', value: 80, min: -200, max: 200, step: 5, description: translate('positive_values_light_the_model_from_above_when_using_the_wall')},
             resolution: {name: translate('shadow_map_resolution'), type: 'select', value: '2048', options: {'512': '512', '1024': '1024', '2048': '2048', '4096': '4096'}},
             floor_enabled: {name: translate('capture_floor'), type: 'toggle', value: false, description: translate('capture_floor_description')},
+            floor_align_model: {name: translate('floor_align_model'), type: 'toggle', value: false},
             floor_style: {name: translate('floor_style'), type: 'select', value: 'tiles', options: {tiles: translate('floor_tiles'), solid: translate('floor_solid')}},
             floor_width: {name: translate('floor_width'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
             floor_depth: {name: translate('floor_depth'), type: 'number', value: 4, min: 0.25, max: 64, step: 0.25},
@@ -3411,7 +3414,8 @@
         if (!session.anchor) session.anchor = bounds.clone();
         const options = session.options;
         const center = session.anchor.getCenter(new THREE.Vector3());
-        session.floor.position.set(center.x + options.floor_offset_x, session.anchor.min.y + options.floor_height - 0.01, center.z + options.floor_offset_z);
+        const base_height = options.floor_align_model ? session.anchor.min.y - 0.01 : 0;
+        session.floor.position.set(center.x + options.floor_offset_x, base_height + options.floor_height, center.z + options.floor_offset_z);
         if (!session.floor_right) {
             session.floor_right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
             session.floor_right.y = 0;
@@ -4541,7 +4545,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.11.0',
+        version: '3.12.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
