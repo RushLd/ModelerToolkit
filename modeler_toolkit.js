@@ -179,6 +179,12 @@
         "restore_original_textures_uvs": "Restaurer les textures et UV d’origine",
         "restore_original_uvs": "Restaurer les UV d’origine",
         "create_inverted_cubes": "Créer des cubes inversés",
+        "tint_preview": "Aperçu de teinte",
+        "show_tint_preview": "Afficher l’aperçu de teinte",
+        "tint_selected_faces": "Teinter les faces sélectionnées",
+        "tint_entire_cube": "Teinter le cube entier",
+        "tint_preview_color": "Couleur de l’aperçu",
+        "change_minecraft_tint": "Modifier la teinte Minecraft",
         "modeler_toolkit_settings": "Paramètres de Modeler Toolkit",
         "toggle_layers": "Afficher / masquer les calques",
         "modeler_toolkit": "Modeler Toolkit",
@@ -416,6 +422,12 @@
         "restore_original_textures_uvs": "Restore original textures and UVs",
         "restore_original_uvs": "Restore original UVs",
         "create_inverted_cubes": "Create inverted cubes",
+        "tint_preview": "Tint preview",
+        "show_tint_preview": "Show tint preview",
+        "tint_selected_faces": "Tint selected faces",
+        "tint_entire_cube": "Tint entire cube",
+        "tint_preview_color": "Preview color",
+        "change_minecraft_tint": "Change Minecraft tint",
         "modeler_toolkit_settings": "Modeler Toolkit settings",
         "toggle_layers": "Show / hide layers",
         "modeler_toolkit": "Modeler Toolkit",
@@ -614,6 +626,8 @@
     let wrapped_form_change;
     let wrapped_button;
     let tools_menu;
+    let tint_menu;
+    let tint_refresh_pending = false;
     let font_scan = null;
     let font_process = null;
     let font_refresh_time = 0;
@@ -624,6 +638,13 @@
     const tool_dialogs = new Set();
     const uv_properties = [];
     const layer_states = new Map();
+    const tint_materials = new Map();
+    const tinted_meshes = new Map();
+    const tint_color_key = 'modeler_toolkit_tint_color';
+    const default_tint_color = '#8eb45a';
+    const tint_mask = 'modeler_toolkit_tint_mask';
+    const tint_uniform = {value: new THREE.Vector3(1, 1, 1)};
+    const tint_refresh_events = ['select_project', 'finish_edit', 'undo', 'redo'];
     const backup_key = 'raven_tools_uv_backup';
     const atlas_backup_key = 'raven_tools_atlas_backup';
 
@@ -671,6 +692,7 @@
                 node.querySelectorAll('.toolbar_label').forEach(label => label.textContent = action.name);
             });
         });
+        if (tint_menu) tint_menu.name = translate('tint_preview');
         preview_action?.setName(translate('preview_gif_render'));
         const plugin = Plugins.all.find(plugin => plugin.id === plugin_id);
         if (plugin) {
@@ -2406,6 +2428,161 @@
         if (changed) toolbar.update(true).save();
     }
 
+    function supports_tint_preview() {
+        return !!(Project && Format.java_face_properties);
+    }
+
+    function tint_scope(cube, entire_cube) {
+        const faces = entire_cube ? Object.values(cube.faces) : UVEditor.getSelectedFaces(cube).map(side => cube.faces[side]);
+        return faces.filter(face => face && face.texture !== null);
+    }
+
+    function sync_tint_toggles() {
+        if (!supports_tint_preview()) return;
+        for (const [id, entire_cube] of [['modeler_toolkit_tint_faces', false], ['modeler_toolkit_tint_cube', true]]) {
+            const toggle = BarItems[id];
+            if (!toggle) continue;
+            const faces = Cube.selected.flatMap(cube => tint_scope(cube, entire_cube));
+            toggle.value = faces.length > 0 && faces.every(face => face.tint >= 0);
+            toggle.updateEnabledState();
+        }
+    }
+
+    function change_selected_tint(enabled, entire_cube) {
+        if (!supports_tint_preview() || Undo.current_save) {
+            sync_tint_toggles();
+            return;
+        }
+        const changes = new Map();
+        for (const cube of Cube.selected) {
+            const faces = tint_scope(cube, entire_cube).filter(face => (face.tint >= 0) !== enabled);
+            if (faces.length) changes.set(cube, faces);
+        }
+        if (changes.size) {
+            edit_model(translate('change_minecraft_tint'), {elements: [...changes.keys()], uv_only: true}, () => {
+                changes.forEach(faces => faces.forEach(face => face.tint = enabled ? 0 : -1));
+            });
+            UVEditor.displayTools();
+        }
+        sync_tint_toggles();
+    }
+
+    function open_tint_color() {
+        const project = Project;
+        show_tool_dialog({
+            id: 'modeler_toolkit_tint_color_dialog',
+            title: translate('tint_preview'),
+            form: {color: {label: translate('tint_preview_color'), type: 'color', value: project[tint_color_key] || default_tint_color}},
+            onConfirm({color}) {
+                if (Project !== project) return;
+                const preview_color = tinycolor(color).toHexString();
+                if (preview_color === (project[tint_color_key] || default_tint_color)) return;
+                project[tint_color_key] = preview_color;
+                project.saved = false;
+                refresh_tint_preview();
+            }
+        });
+    }
+
+    function tint_preview_material(source) {
+        if (!source?.isShaderMaterial || source.isRawShaderMaterial || !source.uniforms?.map ||
+            !/void\s+main\s*\([^)]*\)\s*\{/.test(source.vertexShader) || !source.fragmentShader.includes('gl_FragColor')) return source;
+        let material = tint_materials.get(source);
+        if (!material) {
+            material = source.clone();
+            material.onBeforeCompile = source.onBeforeCompile;
+            const vertex_shader = source.vertexColors && BarItems.toggle_tint_preview
+                ? source.vertexShader.replace(/\bvColor\s*=\s*color\s*;/, 'vColor = vec3(1.0);')
+                : source.vertexShader;
+            material.vertexShader = 'attribute float modeler_toolkit_tint_mask;\nvarying float modeler_toolkit_tint_weight;\n' +
+                vertex_shader.replace(/void\s+main\s*\([^)]*\)\s*\{/, main => main + '\nmodeler_toolkit_tint_weight = modeler_toolkit_tint_mask;\n');
+            const fragment_end = source.fragmentShader.lastIndexOf('}');
+            material.fragmentShader = 'uniform vec3 modeler_toolkit_tint_color;\nvarying float modeler_toolkit_tint_weight;\n' +
+                source.fragmentShader.slice(0, fragment_end) +
+                '\ngl_FragColor.rgb *= mix(vec3(1.0), modeler_toolkit_tint_color, modeler_toolkit_tint_weight);\n' +
+                source.fragmentShader.slice(fragment_end);
+            tint_materials.set(source, material);
+        }
+        material.uniforms = {...source.uniforms, modeler_toolkit_tint_color: tint_uniform};
+        material.map = source.map;
+        material.side = source.side;
+        material.blending = source.blending;
+        material.opacity = source.opacity;
+        return material;
+    }
+
+    function restore_tint_mesh(mesh, state) {
+        state.geometry.deleteAttribute(tint_mask);
+        if (mesh.material === state.preview) mesh.material = state.original;
+        tinted_meshes.delete(mesh);
+    }
+
+    function clear_tint_preview() {
+        tinted_meshes.forEach((state, mesh) => restore_tint_mesh(mesh, state));
+        tint_materials.forEach(material => material.dispose());
+        tint_materials.clear();
+    }
+
+    function apply_cube_tint({element}) {
+        const mesh = element.mesh;
+        const previous = tinted_meshes.get(mesh);
+        const geometry = mesh?.geometry;
+        const vertex_count = geometry?.getAttribute('position')?.count;
+        const visible = supports_tint_preview() && BarItems.modeler_toolkit_show_tint?.value &&
+            Project.view_mode === 'textured' && vertex_count === Canvas.face_order.length * 4;
+        const tinted_faces = visible ? Canvas.face_order.map(side => {
+            const face = element.faces[side];
+            return face.texture !== null && face.tint >= 0 && face.getTexture() instanceof Texture;
+        }) : [];
+        if (!tinted_faces.some(Boolean)) {
+            if (previous) restore_tint_mesh(mesh, previous);
+            return;
+        }
+        if (previous && previous.geometry !== geometry) restore_tint_mesh(mesh, previous);
+        const original = previous && mesh.material === previous.preview ? previous.original : mesh.material;
+        const preview = Array.isArray(original) ? original.map(tint_preview_material) : tint_preview_material(original);
+        if (preview === original || (Array.isArray(preview) && preview.every((material, index) => material === original[index]))) {
+            if (previous) restore_tint_mesh(mesh, previous);
+            return;
+        }
+        let weights = geometry.getAttribute(tint_mask);
+        if (!weights) {
+            weights = new THREE.BufferAttribute(new Float32Array(vertex_count), 1);
+            geometry.setAttribute(tint_mask, weights);
+        }
+        tinted_faces.forEach((enabled, index) => weights.array.fill(Number(enabled), index * 4, (index + 1) * 4));
+        weights.needsUpdate = true;
+        mesh.material = preview;
+        tinted_meshes.set(mesh, {geometry, original, preview});
+    }
+
+    function refresh_tint_preview() {
+        sync_tint_toggles();
+        if (!supports_tint_preview() || !BarItems.modeler_toolkit_show_tint?.value) {
+            clear_tint_preview();
+            return;
+        }
+        const {r, g, b} = tinycolor(Project[tint_color_key] || default_tint_color).toRgb();
+        tint_uniform.value.set(r / 255, g / 255, b / 255);
+        tinted_meshes.forEach((state, mesh) => {
+            if (!Project.nodes_3d[mesh.name] || Project.nodes_3d[mesh.name] !== mesh) restore_tint_mesh(mesh, state);
+        });
+        for (const cube of Cube.all) {
+            if (tinted_meshes.has(cube.mesh) || Object.values(cube.faces).some(face => face.texture !== null && face.tint >= 0)) {
+                cube.preview_controller.updateFaces(cube);
+            }
+        }
+    }
+
+    function schedule_tint_refresh() {
+        if (tint_refresh_pending) return;
+        tint_refresh_pending = true;
+        queueMicrotask(() => {
+            tint_refresh_pending = false;
+            if (plugin_loaded) refresh_tint_preview();
+        });
+    }
+
     function tool_definitions() {
         return [
             ['modeler_toolkit_optimize_atlas', {name: translate('optimize_texture_and_uvs'), icon: 'texture', condition: () => module_enabled('atlas') && !!Project && Outliner.elements.length > 0, click: () => optimize_texture_atlas()}],
@@ -2416,6 +2593,10 @@
             ['modeler_toolkit_restore_uv', {name: translate('restore_original_uvs'), icon: 'settings_backup_restore', condition: () => !!Project && selected_elements().some(backup_matches), click: restore_model_uv}],
             ['modeler_toolkit_inverted', {name: translate('create_inverted_cubes'), icon: 'flip_to_back', condition: () => module_enabled('inverted') && !!Project && selected_elements().some(element => element instanceof Cube), click: create_inverted_cubes}],
             ['modeler_toolkit_outline', {name: translate('create_outlines'), icon: 'crop_square', condition: () => module_enabled('outline') && !!Project && selected_elements().length > 0, click: open_outline}],
+            ['modeler_toolkit_tint_faces', {name: translate('tint_selected_faces'), condition: () => supports_tint_preview() && !Undo.current_save && Cube.selected.some(cube => tint_scope(cube, false).length), onChange: enabled => change_selected_tint(enabled, false)}],
+            ['modeler_toolkit_tint_cube', {name: translate('tint_entire_cube'), condition: () => supports_tint_preview() && !Undo.current_save && Cube.selected.some(cube => tint_scope(cube, true).length), onChange: enabled => change_selected_tint(enabled, true)}],
+            ['modeler_toolkit_show_tint', {name: translate('show_tint_preview'), condition: supports_tint_preview, default: true, save_on_restart: true, onChange: refresh_tint_preview}],
+            ['modeler_toolkit_tint_color', {name: translate('tint_preview_color'), icon: 'palette', condition: supports_tint_preview, click: open_tint_color}],
             ['modeler_toolkit_settings', {name: translate('modeler_toolkit_settings'), icon: 'settings', click: open_settings}],
             ['modeler_toolkit_toggle_layers', {name: translate('toggle_layers'), icon: 'visibility_off', condition: () => module_enabled('layers') && !!Project && Outliner.elements.length > 0, click: () => toggle_layer_visibility('hide')}]
         ];
@@ -2425,23 +2606,41 @@
         remove_toolkit_toolbar_actions();
         [Cube, Mesh].forEach(type => uv_properties.push(new Property(type, 'object', backup_key, {default: {}, exposed: false})));
         uv_properties.push(new Property(ModelProject, 'object', atlas_backup_key, {default: {}, exposed: false}));
+        uv_properties.push(new Property(ModelProject, 'string', tint_color_key, {default: default_tint_color, exposed: false}));
         Blockbench.on('create_undo_save', capture_atlas_undo);
         Blockbench.on('load_undo_save', load_atlas_undo);
         Blockbench.on('save_project', serialize_square_atlas);
-        tool_definitions().forEach(([id, options]) => tool_actions.push(new Action(id, {...options, category: 'edit'})));
+        tool_definitions().forEach(([id, options]) => {
+            const Item = options.onChange ? Toggle : Action;
+            tool_actions.push(new Item(id, {...options, category: 'edit'}));
+        });
         const layer_actions = ['modeler_toolkit_toggle_layers'];
         layer_actions.forEach(id => {
             if (Toolbars.outliner && !Toolbars.outliner.children.some(child => (typeof child === 'string' ? child : child.id) === id)) Toolbars.outliner.add(id);
         });
+        tint_menu = {
+            id: 'modeler_toolkit_tint_menu',
+            name: translate('tint_preview'),
+            icon: 'palette',
+            condition: supports_tint_preview,
+            children: ['modeler_toolkit_tint_faces', 'modeler_toolkit_tint_cube', '_', 'modeler_toolkit_show_tint', 'modeler_toolkit_tint_color']
+        };
+        Cube.prototype.menu.addAction(tint_menu);
+        UVEditor.menu.addAction(tint_menu);
+        Cube.preview_controller.on('update_faces', apply_cube_tint);
+        Blockbench.on('update_selection', sync_tint_toggles);
+        Blockbench.on('unselect_project', clear_tint_preview);
+        tint_refresh_events.forEach(event => Blockbench.on(event, schedule_tint_refresh));
         tools_menu = new BarMenu('modeler_toolkit', [
             'modeler_toolkit_optimize_atlas', 'modeler_toolkit_optimize_variants', 'modeler_toolkit_merge_atlas', 'modeler_toolkit_separate_uv', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_restore_uv', '_',
-            'modeler_toolkit_inverted', 'modeler_toolkit_outline', 'modeler_toolkit_toggle_layers',
+            'modeler_toolkit_inverted', 'modeler_toolkit_outline', tint_menu, 'modeler_toolkit_toggle_layers',
             '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings'
         ], {name: translate('modeler_toolkit'), icon: 'handyman'});
         MenuBar.addMenu(tools_menu, 'tools');
         Blockbench.on('select_project', refresh_layer_icons);
         Blockbench.on('close_project', close_layer_project);
         refresh_layer_icons();
+        refresh_tint_preview();
     }
 
     function cleanup_tool_modules() {
@@ -2455,6 +2654,14 @@
         Blockbench.removeListener('create_undo_save', capture_atlas_undo);
         Blockbench.removeListener('load_undo_save', load_atlas_undo);
         Blockbench.removeListener('save_project', serialize_square_atlas);
+        Blockbench.removeListener('update_selection', sync_tint_toggles);
+        Blockbench.removeListener('unselect_project', clear_tint_preview);
+        tint_refresh_events.forEach(event => Blockbench.removeListener(event, schedule_tint_refresh));
+        Cube.preview_controller.removeListener('update_faces', apply_cube_tint);
+        Cube.prototype.menu.removeAction(tint_menu);
+        UVEditor.menu.removeAction(tint_menu);
+        tint_menu = null;
+        clear_tint_preview();
         tools_menu?.delete();
         remove_toolkit_toolbar_actions();
         tool_actions.forEach(action => action.delete());
@@ -4334,7 +4541,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.10.1',
+        version: '3.11.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',

@@ -24,6 +24,7 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 - **Restaurer les UV d’origine** - Rétablit le placement de la texture sur les faces sélectionnées si une sauvegarde existe.
 - **Créer des cubes inversés** - Duplique les cubes sélectionnés pour rendre leurs faces visibles de l’intérieur.
 - **Créer des contours** - Ajoute un contour réglable autour des éléments sélectionnés.
+- **Aperçu de teinte** - Sur un modèle Java, faites un clic droit sur un cube ou dans l’éditeur UV pour cocher les faces sélectionnées ou le cube entier et choisir la couleur d’aperçu.
 - **Afficher / masquer les calques** - Affiche ou masque les éléments dont le nom contient `_layer`, avec un raccourci configurable.
 - **Modèles d’aperçu personnalisés** - Importez vos fichiers `.bbmodel` et leurs textures dans les paramètres, puis affichez-les depuis le clic droit dans la vue 3D. La bibliothèque reste en place après redémarrage.
 - **Enregistrer un GIF** - Choisissez une ou plusieurs animations dans la fenêtre d’enregistrement, même en dehors du mode Animer.
