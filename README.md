@@ -29,7 +29,7 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 - **Modèles d’aperçu personnalisés** - Importez vos fichiers `.bbmodel` et leurs textures dans les paramètres, puis affichez-les depuis le clic droit dans la vue 3D. La bibliothèque reste en place après redémarrage.
 - **Enregistrer un GIF** - Choisissez une ou plusieurs animations dans la fenêtre d’enregistrement, même en dehors du mode Animer.
 - **Aperçu du rendu GIF** - Affiche une image fixe avec le cadrage et les réglages de la capture.
-- **Ombre dynamique / Rendu propre** - Projette une ombre réglable et limite les bavures de pixels sur les bords des faces.
+- **Ombre dynamique / Rendu propre** - Projette une ombre réglable et limite les bavures de pixels sur les bords des faces. Cochez **Ombres des modèles d’aperçu** pour ajouter les ombres des modèles de référence 3D visibles.
 - **Éclairage personnalisé** - Règle la direction, la hauteur, la teinte et l’intensité de la lumière, ainsi que l’éclairage ambiant.
 - **Sol de rendu** - Ajoute un sol temporaire uni ou en dalles qui reçoit l’ombre. Il se place à Y = 0 par défaut et peut s’aligner sur le bas du modèle.
 - **Afficher les images de référence** - Inclut les images de référence visibles dans l’aperçu et le GIF.

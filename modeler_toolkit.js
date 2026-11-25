@@ -62,6 +62,8 @@
         "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": "Utiliser le rendu dynamique par défaut lors de l’enregistrement d’un GIF, d’un APNG ou d’une séquence PNG.",
         "dynamic_shadow": "Ombre dynamique",
         "project_the_animated_model_onto_an_invisible_wall_or_floor_using": "Projeter l’ombre du modèle animé sur un mur ou un sol invisible à l’aide d’une carte d’ombres.",
+        "shadow_preview_models": "Ombres des modèles d’aperçu",
+        "shadow_preview_models_description": "Les modèles d’aperçu visibles dans la scène projettent aussi une ombre.",
         "shadow_color_tool_settings": "Couleur de l’ombre",
         "open_the_color_picker_and_all_modeler_toolkit_settings": "Choisir la couleur de l’ombre dans les paramètres de rendu.",
         "shadow_opacity": "Opacité de l’ombre (%)",
@@ -306,6 +308,8 @@
         "use_the_dynamic_renderer_by_default_when_recording_a_gif_apng_or": "Use dynamic rendering by default when recording a GIF, APNG or PNG sequence.",
         "dynamic_shadow": "Dynamic shadow",
         "project_the_animated_model_onto_an_invisible_wall_or_floor_using": "Project the animated model's shadow onto an invisible wall or floor using a shadow map.",
+        "shadow_preview_models": "Preview model shadows",
+        "shadow_preview_models_description": "Visible preview models in the scene also cast shadows.",
         "shadow_color_tool_settings": "Shadow color",
         "open_the_color_picker_and_all_modeler_toolkit_settings": "Choose the shadow color in the rendering settings.",
         "shadow_opacity": "Shadow opacity (%)",
@@ -517,6 +521,7 @@
             light_intensity: {name: translate('light_intensity'), type: 'number', value: 70, min: 0, max: 200, step: 5},
             ambient_intensity: {name: translate('ambient_intensity'), type: 'number', value: 30, min: 0, max: 200, step: 5, description: translate('ambient_description')},
             shadow_enabled: {name: translate('dynamic_shadow'), type: 'toggle', value: true, description: translate('project_the_animated_model_onto_an_invisible_wall_or_floor_using')},
+            shadow_preview_models: {name: translate('shadow_preview_models'), type: 'toggle', value: false, description: translate('shadow_preview_models_description')},
             color: {name: translate('shadow_color_tool_settings'), type: 'click', value: '#424242', icon: 'palette', description: translate('open_the_color_picker_and_all_modeler_toolkit_settings'), click: () => open_settings('render')},
             opacity: {name: translate('shadow_opacity'), type: 'number', value: 35, min: 0, max: 100, step: 1, description: translate('partial_opacity_needs_an_opaque_gif_background_or_apng_to_retain')},
             softness: {name: translate('shadow_softness'), type: 'number', value: 0, min: 0, max: 12, step: 0.25, description: translate('shadow_map_filter_radius_zero_produces_a_sharp_shadow')},
@@ -571,7 +576,7 @@
     const installed_floor_fields = new Map();
     const previous_shadow_fields = new Map();
     const installed_shadow_fields = new Map();
-    const shadow_capture_fields = {color: 'modeler_toolkit_shadow_color', opacity: 'modeler_toolkit_shadow_opacity'};
+    const shadow_capture_fields = {color: 'modeler_toolkit_shadow_color', opacity: 'modeler_toolkit_shadow_opacity', shadow_preview_models: 'modeler_toolkit_shadow_preview_models'};
     const floor_keys = Object.keys(setting_definitions).filter(key => key.startsWith('floor_'));
     const lighting_keys = ['lighting_enabled', 'light_azimuth', 'light_elevation', 'light_tone', 'light_color', 'light_intensity', 'ambient_intensity'];
     const capture_default_fields = {
@@ -3079,12 +3084,12 @@
             const definition = setting_definitions[key];
             const installed = {
                 label: definition.name,
-                type: key === 'color' ? 'color' : 'number',
+                type: definition.type === 'toggle' ? 'checkbox' : definition.type === 'click' ? 'color' : definition.type,
                 value: values[key],
                 min: definition.min,
                 max: definition.max,
                 step: definition.step,
-                description: key === 'opacity' ? definition.description : undefined,
+                description: key === 'color' ? undefined : definition.description,
                 condition: form => !!plugin_settings.shadow_enabled.value && !!(form[export_field] || form[plugin_id + '_floor_enabled'] || form[plugin_id + '_lighting_enabled'])
             };
             if (labels_only) return update_field_labels(installed_shadow_fields.get(field), installed);
@@ -3303,15 +3308,27 @@
         return project.elements.filter(element => (element instanceof Cube || element instanceof Mesh) && element.mesh?.geometry?.attributes?.position && is_visible(element.mesh));
     }
 
-    function get_bounds(elements) {
+    function get_bounds(meshes) {
         const bounds = new THREE.Box3();
-        elements.forEach(element => {
-            const mesh = element.mesh;
+        meshes.forEach(mesh => {
             mesh.updateWorldMatrix(true, false);
             const mesh_bounds = new THREE.Box3().setFromBufferAttribute(mesh.geometry.attributes.position).applyMatrix4(mesh.matrixWorld);
             bounds.union(mesh_bounds);
         });
         return bounds;
+    }
+
+    function get_preview_shadow_meshes(render_scene) {
+        const meshes = [];
+        if (typeof PreviewModel !== 'function') return meshes;
+        PreviewModel.getActiveModels().forEach(model => {
+            const root = model.model_3d;
+            if (root?.parent !== render_scene || !is_visible(root)) return;
+            root.traverseVisible(mesh => {
+                if (mesh.isMesh && mesh.geometry?.attributes?.position) meshes.push(mesh);
+            });
+        });
+        return meshes;
     }
 
     function create_watermark_canvas(width, height, options) {
@@ -3510,7 +3527,7 @@
         return material;
     }
 
-    function position_shadow(session, camera, bounds) {
+    function position_shadow(session, camera, bounds, caster_bounds) {
         if (!session.anchor) session.anchor = bounds.clone();
         const center = session.anchor.getCenter(new THREE.Vector3());
         const radius = Math.max(session.anchor.getSize(new THREE.Vector3()).length() / 2, 0.5);
@@ -3530,7 +3547,7 @@
         }
         session.receiver.position.copy(center).addScaledVector(normal, back - radius * session.options.gap / 100 - radius * 0.002);
         session.receiver.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-        const extent = Math.max(radius * 4, bounds.getSize(new THREE.Vector3()).length() * 2, bounds.getCenter(new THREE.Vector3()).distanceTo(center) * 2);
+        const extent = Math.max(radius * 4, caster_bounds.getSize(new THREE.Vector3()).length() * 2, caster_bounds.getCenter(new THREE.Vector3()).distanceTo(center) * 2);
         session.receiver.scale.set(extent * 4, extent * 4, 1);
         if (session.floor) {
             session.receiver.position.copy(session.floor.position).addScaledVector(normal, 0.002);
@@ -3543,9 +3560,9 @@
         const light_right = new THREE.Vector3().crossVectors(camera_up, direction).normalize();
         const light_up = new THREE.Vector3().crossVectors(direction, light_right).normalize();
         const light_bounds = new THREE.Box3();
-        for (const x of [bounds.min.x, bounds.max.x]) {
-            for (const y of [bounds.min.y, bounds.max.y]) {
-                for (const z of [bounds.min.z, bounds.max.z]) {
+        for (const x of [caster_bounds.min.x, caster_bounds.max.x]) {
+            for (const y of [caster_bounds.min.y, caster_bounds.max.y]) {
+                for (const z of [caster_bounds.min.z, caster_bounds.max.z]) {
                     const point = new THREE.Vector3(x, y, z).sub(center);
                     light_bounds.expandByPoint(new THREE.Vector3(point.dot(light_right), point.dot(light_up), point.dot(direction)));
                 }
@@ -3638,14 +3655,18 @@
     function render_frame(session, renderer, render_scene, camera, render) {
         if (session.disposed || Project !== session.project) return render();
         const elements = get_render_elements(session.project);
-        const bounds = get_bounds(elements);
-        if (bounds.isEmpty()) return render();
+        const model_meshes = elements.map(element => element.mesh);
+        const preview_meshes = session.light && session.options.shadow_preview_models ? get_preview_shadow_meshes(render_scene) : [];
+        const model_bounds = get_bounds(model_meshes);
+        const caster_bounds = preview_meshes.length ? model_bounds.clone().union(get_bounds(preview_meshes)) : model_bounds;
+        if (caster_bounds.isEmpty()) return render();
+        const bounds = model_bounds.isEmpty() ? caster_bounds : model_bounds;
         const cast_snapshots = new Map();
         const uv_snapshots = new Map();
         const shadow_state = {enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type, autoUpdate: renderer.shadowMap.autoUpdate, needsUpdate: renderer.shadowMap.needsUpdate};
         const original_buffer_render = renderer.renderBufferDirect;
-        const casters = new Set(elements.map(element => element.mesh));
-        const lit_meshes = new Set(casters);
+        const casters = new Set([...model_meshes, ...preview_meshes]);
+        const lit_meshes = new Set(model_meshes);
         let buffer_wrapper;
         try {
             if (session.options.clean_uv) elements.forEach(element => clean_render_uv(element, uv_snapshots));
@@ -3656,7 +3677,8 @@
                 session.floor.traverse(node => {if (node.isMesh) lit_meshes.add(node);});
             }
             if (session.light) {
-                position_shadow(session, camera, bounds);
+                const receiver_bounds = session.floor || session.options.surface === 'floor' ? bounds : caster_bounds;
+                position_shadow(session, camera, receiver_bounds, caster_bounds);
                 render_scene.traverse(node => {
                     if (node.isMesh || node.isLight) {
                         cast_snapshots.set(node, node.castShadow);
@@ -4545,7 +4567,7 @@
         about: translate('uv_tools_outlines_layer_controls_dynamic_shadows'),
         icon: 'handyman',
         variant: 'both',
-        version: '3.12.0',
+        version: '3.13.0',
         min_version: '5.2.0',
         repository: 'https://github.com/RushLd/ModelerToolkit',
         bug_tracker: 'https://github.com/RushLd/ModelerToolkit/issues',
