@@ -25,6 +25,7 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 - **Créer des cubes inversés** - Duplique les cubes sélectionnés pour rendre leurs faces visibles de l’intérieur.
 - **Créer des contours** - Ajoute un contour réglable autour des éléments sélectionnés.
 - **Aperçu de teinte** - Sur un modèle Java, faites un clic droit sur un cube ou dans l’éditeur UV pour cocher les faces sélectionnées ou le cube entier et choisir la couleur d’aperçu.
+- **Opacité de la texture** - Réglez la transparence des faces ou des cubes sélectionnés avec un aperçu instantané. Le réglage est appliqué au PNG, y compris à chaque image d’une texture animée.
 - **Afficher / masquer les calques** - Affiche ou masque les éléments dont le nom contient `_layer`, avec un raccourci configurable.
 - **Modèles d’aperçu personnalisés** - Importez vos fichiers `.bbmodel` et leurs textures dans les paramètres, puis affichez-les depuis le clic droit dans la vue 3D. La bibliothèque reste en place après redémarrage.
 - **Enregistrer un GIF** - Choisissez une ou plusieurs animations dans la fenêtre d’enregistrement, même en dehors du mode Animer.
@@ -46,6 +47,12 @@ Modeler Toolkit est un plugin Blockbench pour optimiser les textures, ajouter de
 - **Créer une texture avec des UV indépendants** donne à chaque face une zone à peindre. Cette option est utile si une retouche doit s’appliquer à une seule face.
 
 Après un changement, **Restaurer les textures et UV d’origine** remonte d’une étape. Le fichier `.bbmodel` conserve les sauvegardes lorsque vous enregistrez le projet.
+
+### Régler l’opacité d’une face ou d’un cube
+
+Faites un clic droit dans la vue 3D ou dans l’éditeur UV, puis ouvrez **Opacité de la texture**. Choisissez les faces sélectionnées ou les cubes entiers. La valeur règle l’opacité relative à la texture actuelle. À 50 %, un pixel opaque devient à moitié transparent et un pixel déjà à moitié transparent passe à 25 %.
+
+Quand des faces partagent des pixels, le plugin isole la sélection avant d’appliquer le changement. Selon le format du modèle, il crée une texture séparée ou réagrandit l’atlas à la même densité. En jeu, les valeurs intermédiaires nécessitent un mode de rendu translucide.
 
 ### Préparer et enregistrer un GIF
 

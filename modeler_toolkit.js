@@ -187,6 +187,15 @@
         "tint_selected_faces": "Teinter les faces sélectionnées",
         "tint_entire_cube": "Teinter le cube entier",
         "tint_preview_color": "Couleur de l’aperçu",
+        "texture_opacity": "Opacité de la texture",
+        "texture_opacity_faces": "Régler l’opacité des faces sélectionnées",
+        "texture_opacity_cubes": "Régler l’opacité des cubes sélectionnés",
+        "texture_opacity_percent": "Opacité relative (%)",
+        "texture_opacity_description": "100 % conserve l’alpha actuel. Les pixels déjà transparents le restent.",
+        "texture_opacity_unsupported": "Utilisez des textures couleur chargées, sans calques ni rendu émissif, et des UV contenus dans chaque image.",
+        "texture_opacity_box_overlap": "Les faces de ce même encadrement UV se chevauchent. Passez ce cube en UV par face pour les séparer.",
+        "texture_opacity_shared_variants": "Ces UV sont également utilisés par des variantes de texture. Séparez les UV concernés avant de modifier leur opacité.",
+        "texture_opacity_applied": "Opacité appliquée à la texture.",
         "change_minecraft_tint": "Modifier la teinte Minecraft",
         "modeler_toolkit_settings": "Paramètres de Modeler Toolkit",
         "toggle_layers": "Afficher / masquer les calques",
@@ -433,6 +442,15 @@
         "tint_selected_faces": "Tint selected faces",
         "tint_entire_cube": "Tint entire cube",
         "tint_preview_color": "Preview color",
+        "texture_opacity": "Texture opacity",
+        "texture_opacity_faces": "Adjust selected face opacity",
+        "texture_opacity_cubes": "Adjust selected cube opacity",
+        "texture_opacity_percent": "Relative opacity (%)",
+        "texture_opacity_description": "100% keeps the current alpha. Transparent pixels stay transparent.",
+        "texture_opacity_unsupported": "Use loaded color textures without layers or emissive rendering, and keep UVs within each frame.",
+        "texture_opacity_box_overlap": "Faces in this box UV overlap. Switch the cube to per-face UVs to separate them.",
+        "texture_opacity_shared_variants": "Texture variants use these UVs too. Separate the affected UVs before adjusting their opacity.",
+        "texture_opacity_applied": "Opacity applied to the texture.",
         "change_minecraft_tint": "Change Minecraft tint",
         "modeler_toolkit_settings": "Modeler Toolkit settings",
         "toggle_layers": "Show / hide layers",
@@ -635,6 +653,8 @@
     let wrapped_button;
     let tools_menu;
     let tint_menu;
+    let opacity_menu;
+    let clear_opacity_preview;
     let tint_refresh_pending = false;
     let font_scan = null;
     let font_process = null;
@@ -701,6 +721,7 @@
             });
         });
         if (tint_menu) tint_menu.name = translate('tint_preview');
+        if (opacity_menu) opacity_menu.name = translate('texture_opacity');
         preview_action?.setName(translate('preview_gif_render'));
         const plugin = Plugins.all.find(plugin => plugin.id === plugin_id);
         if (plugin) {
@@ -888,6 +909,7 @@
                 tool_dialogs.delete(this);
             },
             onCancel() {
+                options.onCancel?.call(this);
                 this.hide().delete();
                 tool_dialogs.delete(this);
             }
@@ -1184,6 +1206,7 @@
         for (let backup = Project?.[atlas_backup_key]; backup?.version && !visited.has(backup); backup = backup.previous_backup) {
             visited.add(backup);
             if (backup.version === 3 || backup.version === 4) backup.optimized_textures.forEach(texture => optimized_ids.add(texture.uuid));
+            backup.added_textures?.forEach(({uuid}) => optimized_ids.add(uuid));
         }
         for (const saved of model.textures) {
             if (!optimized_ids.has(saved.uuid)) continue;
@@ -1404,7 +1427,7 @@
         }
     }
 
-    function plan_model_uvs(unique_faces = false, variant_source = null) {
+    function plan_model_uvs(unique_faces = false, variant_source = null, opacity_textures = null) {
         const sources = new Map();
         const skipped = new Map();
         const entries = [];
@@ -1421,6 +1444,7 @@
                 if (face.texture === null) continue;
                 const texture = face.getTexture();
                 if (!(texture instanceof Texture)) continue;
+                if (opacity_textures && !opacity_textures.has(texture)) continue;
                 const source_error = atlas_source_error(texture);
                 if (source_error) {
                     skip(translate(source_error));
@@ -1451,12 +1475,12 @@
                     source = variant_source || read_atlas_source(texture);
                     sources.set(texture, source);
                 }
-                const sample_frame_edge = (variant_source || frame_count > 1) && !element.box_uv;
+                const sample_frame_edge = !opacity_textures && (variant_source || frame_count > 1) && !element.box_uv;
                 const x = sample_frame_edge ? Math.floor(min[0]) : Math.min(source.width - 1, Math.floor(min[0]));
                 const y = sample_frame_edge ? Math.floor(min[1]) : Math.min(frame_height - 1, Math.floor(min[1]));
                 const width = Math.max(1, Math.ceil(max[0]) - x);
                 const height = Math.max(1, Math.ceil(max[1]) - y);
-                const independent = unique_faces || element.box_uv;
+                const independent = unique_faces || element.box_uv || opacity_textures;
                 const region_key = [x, y, width, height, ...(independent ? [element.uuid, key] : [])].join('_');
                 let region = source.regions.get(region_key);
                 if (!region) {
@@ -1467,11 +1491,11 @@
                     source.regions.set(region_key, region);
                 }
                 const entry = {element, key, face, region, scale, edge_sample: [0, 1].map(axis => min[axis] === max[axis])};
-                entry.transparent = !unique_faces && (element instanceof Cube ? region.transparent ??= transparent_uv_face(entry) : transparent_uv_face(entry));
+                entry.transparent = !unique_faces && !opacity_textures && (element instanceof Cube ? region.transparent ??= transparent_uv_face(entry) : transparent_uv_face(entry));
                 entries.push(entry);
             }
         }
-        if (!unique_faces) group_box_uv_regions(entries);
+        if (!unique_faces && !opacity_textures) group_box_uv_regions(entries);
         return {entries, skipped, sources};
     }
 
@@ -2309,10 +2333,15 @@
                 (expected.uv_width !== undefined && texture.getUVWidth() !== expected.uv_width) ||
                 (expected.uv_height !== undefined && texture.getUVHeight() !== expected.uv_height);
         })) return atlas_restore_blocked(translate('an_optimized_texture_is_missing_or_has_a_different_resolution_un'));
+        const added = (backup.added_textures || []).map(({uuid, width, height}) => Texture.all.find(texture =>
+            texture.uuid === uuid && texture.width === width && texture.height === height));
+        if (added.some(texture => !texture)) return atlas_restore_blocked(translate('an_optimized_texture_is_missing_or_has_a_different_resolution_un'));
+        const affected_textures = [...textures, ...added];
         const elements = Outliner.elements.filter(element => backup.elements[element.uuid]);
         if (elements.some(element => !texture_uv_topology_matches(element, backup.elements[element.uuid], backup.removed_faces?.[element.uuid]))) return atlas_restore_blocked(translate('an_optimized_element_has_different_faces_or_vertices_undo_its_to'));
-        if (Outliner.elements.some(element => !backup.elements[element.uuid] && (element.faces ? Object.values(element.faces).some(face => textures.includes(face.getTexture())) : textures.some(texture => element.texture === texture.uuid)))) return atlas_restore_blocked(translate('new_geometry_uses_an_optimized_texture_undo_that_addition_before'));
-        const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
+        if (Outliner.elements.some(element => !backup.elements[element.uuid] && (element.faces ? Object.values(element.faces).some(face => affected_textures.includes(face.getTexture())) : affected_textures.some(texture => element.texture === texture.uuid))) || Group.all.some(group => added.some(texture => group.texture === texture.uuid))) return atlas_restore_blocked(translate('new_geometry_uses_an_optimized_texture_undo_that_addition_before'));
+        const aspects = {elements, textures: affected_textures, bitmap: true, uv_only: true, uv_mode: true, raven_tools_atlas: true};
+        if (added.length) Object.assign(aspects, {texture_order: true, selected_texture: true});
         Undo.initEdit(aspects);
         try {
             Project.texture_width = backup.width;
@@ -2326,9 +2355,10 @@
                 texture.fromDataURL(saved.image_data || saved.source);
             });
             elements.forEach(element => apply_texture_uv(element, backup.elements[element.uuid], backup.removed_faces?.[element.uuid]));
+            added.forEach(texture => texture.remove(true));
             Project[atlas_backup_key] = structuredClone(backup.previous_backup || {});
             refresh_atlas_view();
-            Undo.finishEdit(translate('restore_original_square_atlas_textures_and_uvs'), aspects);
+            Undo.finishEdit(translate('restore_original_square_atlas_textures_and_uvs'), {...aspects, textures});
         } catch (error) {
             Undo.cancelEdit(true);
             refresh_atlas_view();
@@ -2443,6 +2473,249 @@
     function tint_scope(cube, entire_cube) {
         const faces = entire_cube ? Object.values(cube.faces) : UVEditor.getSelectedFaces(cube).map(side => cube.faces[side]);
         return faces.filter(face => face && face.texture !== null);
+    }
+
+    function opacity_selection(entire_cube) {
+        return Cube.selected.flatMap(cube => tint_scope(cube, entire_cube)).filter(face => face.getTexture() instanceof Texture);
+    }
+
+    function close_opacity_preview() {
+        clear_opacity_preview?.();
+    }
+
+    function create_opacity_preview(selection, alpha) {
+        clear_opacity_preview?.();
+        if (Project.view_mode !== 'textured') return;
+        const materials = new Map();
+        const meshes = [];
+        const sample = 'vec4 color=texture2D(map,vUv);';
+        const picked = new Set(selection);
+        for (const cube of new Set(selection.map(face => face.element))) {
+            const {mesh} = cube;
+            const {geometry, material} = mesh;
+            const sides = geometry.faces;
+            if (!sides?.length || geometry.index?.count !== sides.length * 6) continue;
+            const original_groups = geometry.groups;
+            const preview_materials = sides.map((side, index) => {
+                const group = original_groups.find(group => index * 6 >= group.start && index * 6 < group.start + group.count);
+                const source = Array.isArray(material) ? material[group?.materialIndex] : material;
+                if (!picked.has(cube.faces[side])) return source;
+                if (!source?.fragmentShader?.includes(sample) || source.uniforms.EMISSIVE?.value) return source;
+                if (!materials.has(source)) {
+                    const preview = source.clone();
+                    preview.onBeforeCompile = source.onBeforeCompile;
+                    preview.uniforms = {...source.uniforms, modeler_toolkit_alpha: alpha};
+                    preview.fragmentShader = 'uniform float modeler_toolkit_alpha;\n' + source.fragmentShader.replace(sample, sample + 'color.a *= modeler_toolkit_alpha;');
+                    materials.set(source, preview);
+                }
+                return materials.get(source);
+            });
+            if (preview_materials.some(material => !material) || !preview_materials.some(material => material.uniforms?.modeler_toolkit_alpha === alpha)) continue;
+            geometry.groups = sides.map((side, index) => ({start: index * 6, count: 6, materialIndex: index}));
+            meshes.push({mesh, material, original_groups, preview_materials, preview_groups: geometry.groups});
+            mesh.material = preview_materials;
+        }
+        clear_opacity_preview = () => {
+            for (const state of meshes) {
+                if (state.mesh.material === state.preview_materials) state.mesh.material = state.material;
+                if (state.mesh.geometry.groups === state.preview_groups) state.mesh.geometry.groups = state.original_groups;
+            }
+            materials.forEach(material => material.dispose());
+            clear_opacity_preview = null;
+        };
+    }
+
+    function opacity_rectangles_overlap(first, second) {
+        return first.x < second.x + second.width && second.x < first.x + first.width &&
+            first.y < second.y + second.height && second.y < first.y + first.height;
+    }
+
+    function opacity_expansion(source, entries, selected) {
+        const boxes = new Map();
+        const regions = new Map();
+        const moved = [];
+        for (const entry of selected) {
+            if (!entry.element.box_uv) {
+                regions.set(entry.region, [entry]);
+                continue;
+            }
+            if (!boxes.has(entry.element)) boxes.set(entry.element, entries.filter(item => item.element === entry.element));
+        }
+        for (const [element, faces] of boxes) {
+            const picked = faces.filter(entry => selected.includes(entry));
+            if (faces.some(entry => !picked.includes(entry) && picked.some(other => opacity_rectangles_overlap(entry.region, other.region)))) {
+                throw new Error(translate('texture_opacity_box_overlap'));
+            }
+            const x = Math.min(...faces.map(entry => entry.region.x));
+            const y = Math.min(...faces.map(entry => entry.region.y));
+            const width = Math.max(...faces.map(entry => entry.region.x + entry.region.width)) - x;
+            const height = Math.max(...faces.map(entry => entry.region.y + entry.region.height)) - y;
+            const region = {source, x, y, width, height};
+            region.target = region;
+            const box_layout = {element, region, scale: faces[0].scale, offset: element.uv_offset.slice()};
+            moved.push(...faces.map(entry => ({...entry, region, box_layout})));
+            regions.set(region, picked);
+        }
+        const standalone = selected.filter(entry => !entry.element.box_uv);
+        moved.push(...standalone);
+        const ordered = [...regions.keys()].sort((first, second) => second.height - first.height || second.width - first.width);
+        const original = {source, x: 0, y: 0, width: source.width, height: source.frame_height};
+        const limits = atlas_layout_limits(source.frame_count);
+        const uv_width = source.texture.getUVWidth();
+        const uv_height = source.texture.getUVHeight();
+        for (let factor = 2; ; factor *= 2) {
+            const width = original.width * factor;
+            const frame_height = original.height * factor;
+            if (width > limits.width || frame_height > limits.height || width * frame_height > limits.area) break;
+            const size = [uv_width * factor, uv_height * factor];
+            if (!preserves_flipbook_frames(source, width, frame_height, size)) break;
+            for (const [x, y] of [[original.width, 0], [0, original.height]]) {
+                const placements = fit_padded_regions(ordered, width - x, frame_height - y, {remaining: 16000000});
+                if (!placements) continue;
+                const targets = [];
+                for (const [region, placement] of placements) {
+                    placement.x += x;
+                    placement.y += y;
+                    targets.push(...regions.get(region).map(entry => ({...entry.region,
+                        x: placement.x + entry.region.x - region.x, y: placement.y + entry.region.y - region.y})));
+                }
+                placements.set(original, {x: 0, y: 0});
+                return {...bake_padded_texture(source, {width, frame_height, placements}), uv_width: size[0], uv_height: size[1],
+                    entries: moved, hidden_entries: [], targets};
+            }
+        }
+        throw new Error(translate('layout_does_not_fit_original_density'));
+    }
+
+    function plan_texture_opacity(selection, opacity) {
+        const textures = new Set(selection.map(face => face.getTexture()));
+        if (Texture.all.some(texture => texture.render_mode === 'layered') || [...textures].some(texture =>
+            !(texture instanceof Texture) || texture.render_mode === 'emissive' || texture.pbr_channel && texture.pbr_channel !== 'color')) {
+            throw new Error(translate('texture_opacity_unsupported'));
+        }
+        const {entries, sources, skipped} = plan_model_uvs(false, null, textures);
+        if (skipped.size || selection.some(face => !entries.some(entry => entry.face === face)) || Outliner.elements.some(element =>
+            !(element instanceof Cube || element instanceof Mesh) && [...textures].some(texture => element.texture === texture.uuid))) {
+            throw new Error(translate('texture_opacity_unsupported'));
+        }
+        const picked = new Set(selection);
+        const plans = [];
+        for (const [texture, source] of sources) {
+            const uses = entries.filter(entry => entry.region.source === source);
+            const selected = uses.filter(entry => picked.has(entry.face));
+            const others = uses.filter(entry => !picked.has(entry.face));
+            const shared = selected.some(entry => others.some(other => opacity_rectangles_overlap(entry.region, other.region)));
+            const can_copy = !Format.single_texture && !Format.per_group_texture;
+            if (shared && !can_copy && Texture.all.length > 1) throw new Error(translate('texture_opacity_shared_variants'));
+            const plan = shared && !can_copy ? opacity_expansion(source, uses, selected) : {
+                source, width: source.width, height: source.height, frame_height: source.frame_height,
+                uv_width: texture.getUVWidth(), uv_height: texture.getUVHeight(), pixels: source.words.slice(),
+                targets: selected.map(entry => entry.region), entries: selected, copy: shared
+            };
+            const pixels = new Uint8ClampedArray(plan.pixels.buffer);
+            const mask = new Uint8Array(plan.width * plan.frame_height);
+            for (const {x, y, width, height} of plan.targets) {
+                for (let row = y; row < y + height; row++) {
+                    mask.fill(1, row * plan.width + x, row * plan.width + x + width);
+                }
+            }
+            let changed = false;
+            for (let frame = 0; frame < source.frame_count; frame++) {
+                for (let pixel = 0; pixel < mask.length; pixel++) {
+                    if (!mask[pixel]) continue;
+                    const alpha = (frame * mask.length + pixel) * 4 + 3;
+                    const value = Math.round(pixels[alpha] * opacity);
+                    if (pixels[alpha] !== value) changed = true;
+                    pixels[alpha] = value;
+                }
+            }
+            if (changed) plans.push({...plan, elements: (plan.copy ? selected : uses).map(entry => entry.element)});
+        }
+        return plans;
+    }
+
+    function apply_texture_opacity(plans) {
+        if (!plans.length) return;
+        const edits = plans.filter(plan => !plan.copy);
+        const textures = edits.map(plan => plan.source.texture);
+        const elements = [...new Set(plans.flatMap(plan => plan.elements))];
+        const added = [];
+        const expanded = plans.find(plan => plan.placements);
+        const backup = {
+            version: 3, mode: 'texture_opacity', format: Format.id, width: Project.texture_width, height: Project.texture_height,
+            optimized_width: !Format.per_texture_uv_size && expanded ? expanded.uv_width : Project.texture_width,
+            optimized_height: !Format.per_texture_uv_size && expanded ? expanded.uv_height : Project.texture_height,
+            previous_backup: structuredClone(Project[atlas_backup_key] || {}),
+            textures: textures.map(texture => texture.getUndoCopy(true)),
+            optimized_textures: edits.map(({source, width, height, uv_width, uv_height}) => ({uuid: source.texture.uuid, width, height, uv_width, uv_height})),
+            elements: Object.fromEntries(elements.map(element => [element.uuid, capture_texture_uv(element)])),
+            added_textures: []
+        };
+        const aspects = {elements, textures, bitmap: true, uv_only: true, uv_mode: true, texture_order: true, selected_texture: true, raven_tools_atlas: true};
+        Undo.initEdit(aspects);
+        try {
+            Project.texture_width = backup.optimized_width;
+            Project.texture_height = backup.optimized_height;
+            for (const plan of plans) {
+                const source = plan.source.texture;
+                let texture = source;
+                if (plan.copy) {
+                    const stem = source.name.replace(/\.[^.]+$/, '') + '_opacity';
+                    let name = stem + '.png';
+                    for (let index = 2; Texture.all.some(texture => texture.name === name); index++) name = stem + '_' + index + '.png';
+                    const {folder, namespace, scope, wrap_mode, render_mode, render_sides, frame_time, frame_order_type, frame_order, frame_interpolate} = source;
+                    texture = new Texture({name, folder, namespace, scope, wrap_mode, render_mode, render_sides,
+                        frame_time, frame_order_type, frame_order, frame_interpolate});
+                    added.push(texture);
+                }
+                texture.force_translucent = true;
+                write_atlas_bitmap(texture, atlas_data_url(plan), plan);
+                if (plan.copy) {
+                    texture.add(false);
+                    for (const entry of plan.entries) entry.face.texture = texture.uuid;
+                }
+                if (plan.placements) apply_atlas_uvs(plan);
+            }
+            backup.added_textures = added.map(({uuid, width, height}) => ({uuid, width, height}));
+            Project[atlas_backup_key] = backup;
+            refresh_atlas_view();
+            Undo.finishEdit(translate('texture_opacity'), {...aspects, textures: [...textures, ...added]});
+        } catch (error) {
+            Undo.cancelEdit(true);
+            refresh_atlas_view();
+            throw error;
+        }
+        Blockbench.showQuickMessage(translate('texture_opacity_applied'));
+    }
+
+    function open_texture_opacity(entire_cube) {
+        if (active_session || Undo.current_save) return;
+        const project = Project;
+        const selection = opacity_selection(entire_cube);
+        const alpha = {value: 1};
+        show_tool_dialog({
+            id: 'modeler_toolkit_texture_opacity_dialog',
+            title: translate('texture_opacity'),
+            darken: false,
+            form: {opacity: {label: translate('texture_opacity_percent'), description: translate('texture_opacity_description'),
+                type: 'range', min: 0, max: 100, step: 1, value: 100}},
+            onFormChange({opacity}) {
+                if (Project !== project || !Number.isFinite(opacity)) return;
+                alpha.value = Math.max(0, Math.min(100, opacity)) / 100;
+                if (alpha.value === 1) close_opacity_preview();
+                else if (!clear_opacity_preview) create_opacity_preview(selection, alpha);
+            },
+            onCancel: close_opacity_preview,
+            onConfirm({opacity}) {
+                clear_opacity_preview?.();
+                if (Project !== project || active_session || Undo.current_save || !Number.isFinite(opacity) || opacity >= 100) return;
+                try {
+                    apply_texture_opacity(plan_texture_opacity(selection, Math.max(0, opacity) / 100));
+                } catch (error) {
+                    queueMicrotask(() => Blockbench.showMessageBox({title: translate('texture_opacity'), message: error_message(error), icon: 'error', buttons: [translate('close')]}));
+                }
+            }
+        });
     }
 
     function sync_tint_toggles() {
@@ -2601,6 +2874,8 @@
             ['modeler_toolkit_restore_uv', {name: translate('restore_original_uvs'), icon: 'settings_backup_restore', condition: () => !!Project && selected_elements().some(backup_matches), click: restore_model_uv}],
             ['modeler_toolkit_inverted', {name: translate('create_inverted_cubes'), icon: 'flip_to_back', condition: () => module_enabled('inverted') && !!Project && selected_elements().some(element => element instanceof Cube), click: create_inverted_cubes}],
             ['modeler_toolkit_outline', {name: translate('create_outlines'), icon: 'crop_square', condition: () => module_enabled('outline') && !!Project && selected_elements().length > 0, click: open_outline}],
+            ['modeler_toolkit_opacity_faces', {name: translate('texture_opacity_faces'), icon: 'opacity', condition: () => !!Project && opacity_selection(false).length > 0, click: () => open_texture_opacity(false)}],
+            ['modeler_toolkit_opacity_cubes', {name: translate('texture_opacity_cubes'), icon: 'opacity', condition: () => !!Project && opacity_selection(true).length > 0, click: () => open_texture_opacity(true)}],
             ['modeler_toolkit_tint_faces', {name: translate('tint_selected_faces'), condition: () => supports_tint_preview() && !Undo.current_save && Cube.selected.some(cube => tint_scope(cube, false).length), onChange: enabled => change_selected_tint(enabled, false)}],
             ['modeler_toolkit_tint_cube', {name: translate('tint_entire_cube'), condition: () => supports_tint_preview() && !Undo.current_save && Cube.selected.some(cube => tint_scope(cube, true).length), onChange: enabled => change_selected_tint(enabled, true)}],
             ['modeler_toolkit_show_tint', {name: translate('show_tint_preview'), condition: supports_tint_preview, default: true, save_on_restart: true, onChange: refresh_tint_preview}],
@@ -2635,13 +2910,23 @@
         };
         Cube.prototype.menu.addAction(tint_menu);
         UVEditor.menu.addAction(tint_menu);
+        opacity_menu = {
+            id: 'modeler_toolkit_opacity_menu',
+            name: translate('texture_opacity'),
+            icon: 'opacity',
+            condition: () => !!Project && opacity_selection(true).length > 0,
+            children: ['modeler_toolkit_opacity_faces', 'modeler_toolkit_opacity_cubes']
+        };
+        Cube.prototype.menu.addAction(opacity_menu);
+        UVEditor.menu.addAction(opacity_menu);
         Cube.preview_controller.on('update_faces', apply_cube_tint);
         Blockbench.on('update_selection', sync_tint_toggles);
         Blockbench.on('unselect_project', clear_tint_preview);
+        Blockbench.on('unselect_project', close_opacity_preview);
         tint_refresh_events.forEach(event => Blockbench.on(event, schedule_tint_refresh));
         tools_menu = new BarMenu('modeler_toolkit', [
             'modeler_toolkit_optimize_atlas', 'modeler_toolkit_optimize_variants', 'modeler_toolkit_merge_atlas', 'modeler_toolkit_separate_uv', 'modeler_toolkit_restore_atlas', 'modeler_toolkit_restore_uv', '_',
-            'modeler_toolkit_inverted', 'modeler_toolkit_outline', tint_menu, 'modeler_toolkit_toggle_layers',
+            'modeler_toolkit_inverted', 'modeler_toolkit_outline', tint_menu, opacity_menu, 'modeler_toolkit_toggle_layers',
             '_', 'modeler_toolkit_preview_shadow', 'modeler_toolkit_settings'
         ], {name: translate('modeler_toolkit'), icon: 'handyman'});
         MenuBar.addMenu(tools_menu, 'tools');
@@ -2664,11 +2949,16 @@
         Blockbench.removeListener('save_project', serialize_square_atlas);
         Blockbench.removeListener('update_selection', sync_tint_toggles);
         Blockbench.removeListener('unselect_project', clear_tint_preview);
+        Blockbench.removeListener('unselect_project', close_opacity_preview);
         tint_refresh_events.forEach(event => Blockbench.removeListener(event, schedule_tint_refresh));
         Cube.preview_controller.removeListener('update_faces', apply_cube_tint);
         Cube.prototype.menu.removeAction(tint_menu);
         UVEditor.menu.removeAction(tint_menu);
         tint_menu = null;
+        Cube.prototype.menu.removeAction(opacity_menu);
+        UVEditor.menu.removeAction(opacity_menu);
+        opacity_menu = null;
+        close_opacity_preview();
         clear_tint_preview();
         tools_menu?.delete();
         remove_toolkit_toolbar_actions();
